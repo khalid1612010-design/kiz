@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect x="12" y="12" width="176" height="176" rx="28" ry="28" fill="none" stroke="#E8971E" stroke-width="10"/>
+  <rect x="24" y="24" width="152" height="152" rx="20" ry="20" fill="none" stroke="#E8971E" stroke-width="5"/>
+  <!-- K letter - blue -->
+  <path d="M50 155V45h28v42l38-42h0l-32 38 36 72h-28l-24-52-18 20v32z" fill="#1B5494"/>
+  <!-- Z letter - gold -->
+  <path d="M112 45h48v24l-38 62h40v24h-54v-24l38-62h-34z" fill="#E8971E"/>
+  <!-- Triangle connection dots -->
+  <circle cx="100" cy="68" r="5" fill="white" stroke="#1B5494" stroke-width="2"/>
+  <circle cx="82" cy="100" r="5" fill="white" stroke="#1B5494" stroke-width="2"/>
+  <circle cx="118" cy="100" r="5" fill="white" stroke="#1B5494" stroke-width="2"/>
+  <circle cx="130" cy="68" r="5" fill="white" stroke="#1B5494" stroke-width="2"/>
+  <circle cx="76" cy="68" r="5" fill="white" stroke="#1B5494" stroke-width="2"/>
+  <!-- Triangle lines -->
+  <line x1="82" y1="100" x2="100" y2="68" stroke="#1B5494" stroke-width="2"/>
+  <line x1="118" y1="100" x2="100" y2="68" stroke="#1B5494" stroke-width="2"/>
+  <line x1="82" y1="100" x2="118" y2="100" stroke="#1B5494" stroke-width="2"/>
+  <line x1="76" y1="68" x2="100" y2="68" stroke="#1B5494" stroke-width="2"/>
+  <line x1="100" y1="68" x2="130" y2="68" stroke="#1B5494" stroke-width="2"/>
+</svg>
