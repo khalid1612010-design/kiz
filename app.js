@@ -47,10 +47,10 @@ function rerenderCurrent(){if(session)renderContent()}
 function renderLogin(){let inner="";if(loginStep==="root")inner=`<div class="brand-logo"><img src="${LOGO_URL}"></div><h1>${t("loginTitle")}</h1><div class="sub">${t("loginSub")}</div><button class="login-btn btn-blue" onclick="loginStep='emp';renderLogin()">${IC.users}${t("loginEmp")}</button><button class="login-btn btn-ghost" onclick="loginStep='admin';renderLogin()">${IC.gear}${t("loginAdmin")}</button><button class="lang-pill" onclick="switchLang()">${IC.globe} ${LANG==="ar"?"English":"العربية"}</button>`;else if(loginStep==="emp")inner=`<span class="back-link" onclick="loginStep='root';renderLogin()">‹ ${t("back")}</span><div class="brand-logo"><img src="${LOGO_URL}"></div><h1>${t("loginEmp")}</h1><div class="sub">${t("chooseName")}</div><select id="empSel"><option value="">${t("chooseName")}</option>${EMPLOYEES.map(e=>`<option value="${e.id}">${esc(e.name)} — ${esc(e.department)}</option>`).join("")}</select><button class="login-btn btn-blue" style="margin-top:16px" onclick="empLogin()">${t("enter")}</button>`;else inner=`<span class="back-link" onclick="loginStep='root';renderLogin()">‹ ${t("back")}</span><div class="brand-logo"><img src="${LOGO_URL}"></div><h1>${t("loginAdmin")}</h1><div class="sub">${t("adminPass")}</div><input id="adminPass" type="password" placeholder="••••" onkeydown="if(event.key==='Enter')adminLogin()"><button class="login-btn btn-blue" style="margin-top:16px" onclick="adminLogin()">${t("enter")}</button>`;$("#loginView").innerHTML=`<div class="login-card">${inner}</div>`}
 function empLogin(){const id=$("#empSel").value;if(!id)return toast(t("fillRequired"),"w");setSession({role:"employee",empId:id});currentView="empHome";render()}function adminLogin(){if($("#adminPass").value===SETTINGS.password){setSession({role:"admin"});currentView="dashboard";render()}else toast(t("wrongPass"),"e")}function logout(){setSession(null);currentView="dashboard";render()}function switchLang(){LANG=LANG==="ar"?"en":"ar";localStorage.setItem("kz_lang",LANG);document.documentElement.lang=LANG;document.documentElement.dir=LANG==="ar"?"rtl":"ltr";render()}
 function isSalesEmp(){return empById(session?.empId)?.department==="Sales"}function nav(v){currentView=v;toggleSide(false);render()}function toggleSide(open){$("#sidebar")?.classList.toggle("open",open);$("#sideOverlay")?.classList.toggle("on",open)}
-function renderSidebar(){let items=session.role==="admin"?[["dashboard",IC.dash,"dashboard"],["create",IC.plus,"createTask"],["tasks",IC.tasks,"tasks"],["board",IC.board,"planBoard"],["employees",IC.users,"employees"],["reports",IC.chart,"reports"],["salesReports",IC.chart,"salesReports"],["archive",IC.archive,"archive"],["settings",IC.gear,"settings"]]:[["empHome",IC.dash,"todayTasks"]];if(session.role==="employee"&&isSalesEmp())items.push(["empCreate",IC.plus,"salesCreateTask"],["salesReport",IC.chart,"salesReports"],["clientFollowup",IC.plus,"clientFollowup"]);$("#sidebar").innerHTML=`<div class="side-head"><div class="side-logo"><img src="${LOGO_URL}"></div><div><b>${esc(SETTINGS.company)}</b><span>${esc(LANG==="ar"?SETTINGS.companyAr:"Kaizen Adv. Agency")}</span></div></div><nav class="side-nav">${items.map(([v,ic,l])=>`<button class="nav-item ${currentView===v?"active":""}" onclick="nav('${v}')">${ic}<span>${t(l)}</span></button>`).join("")}</nav><div class="side-foot"><button class="logout-btn" onclick="logout()">${IC.out}<span>${t("logout")}</span></button></div>`}
+function renderSidebar(){let items=session.role==="admin"?[["dashboard",IC.dash,"dashboard"],["create",IC.plus,"createTask"],["tasks",IC.tasks,"tasks"],["board",IC.board,"planBoard"],["employees",IC.users,"employees"],["reports",IC.chart,"reports"],["salesReports",IC.chart,"salesReports"],["archive",IC.archive,"archive"],["settings",IC.gear,"settings"]]:[["empHome",IC.dash,"todayTasks"]];if(session.role==="employee"&&isSalesEmp())items.push(["empCreate",IC.plus,"salesCreateTask"],["salesReport",IC.chart,"salesReports"]);$("#sidebar").innerHTML=`<div class="side-head"><div class="side-logo"><img src="${LOGO_URL}"></div><div><b>${esc(SETTINGS.company)}</b><span>${esc(LANG==="ar"?SETTINGS.companyAr:"Kaizen Adv. Agency")}</span></div></div><nav class="side-nav">${items.map(([v,ic,l])=>`<button class="nav-item ${currentView===v?"active":""}" onclick="nav('${v}')">${ic}<span>${t(l)}</span></button>`).join("")}</nav><div class="side-foot"><button class="logout-btn" onclick="logout()">${IC.out}<span>${t("logout")}</span></button></div>`}
 function renderTopbar(){$("#topbar").innerHTML=`<button class="icon-btn menu-btn" onclick="toggleSide(true)">${IC.menu}</button><div class="top-date"><b id="tbDate"></b><span id="tbTime"></span></div><div class="search-wrap">${IC.search}<input id="topSearch" placeholder="${t("search")}" value="${esc(topSearch)}"></div><button class="lang-pill" style="margin:0" onclick="switchLang()">${IC.globe} ${LANG==="ar"?"English":"العربية"}</button><button class="icon-btn" onclick="logout()">${IC.out}</button>`;tickClock();$("#topSearch").oninput=e=>{topSearch=e.target.value;if(session.role==="admin"&&topSearch.trim())currentView="tasks";renderSidebar();renderContent()}}
 let clockTimer;function tickClock(){const d=new Date();if($("#tbDate"))$("#tbDate").textContent=d.toLocaleDateString(LANG==="ar"?"ar-EG":"en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});if($("#tbTime"))$("#tbTime").textContent=d.toLocaleTimeString(LANG==="ar"?"ar-EG":"en-GB");clearTimeout(clockTimer);clockTimer=setTimeout(tickClock,1000)}
-async function renderContent(){const c=$("#content");if(session.role==="employee"){if(currentView==="empCreate"){salesCreateTaskModal();currentView="empHome"}if(currentView==="clientFollowup"){c.innerHTML=await viewClientFollowupPage();return}c.innerHTML=currentView==="salesReport"?await viewSalesReport():viewEmpHome();return}if(currentView==="salesReports"){c.innerHTML=await viewAdminSalesReports();return}const views={dashboard:viewDashboard,create:viewCreate,tasks:viewTasks,board:viewBoard,employees:viewEmployees,reports:viewReports,archive:viewArchive,settings:viewSettings};c.innerHTML=(views[currentView]||viewDashboard)();if(currentView==="create")filterEmpByDept();if(currentView==="board")bindBoardDnD();if(currentView==="tasks"&&tasksViewMode==="kanban")bindKanbanDnD()}
+async function renderContent(){const c=$("#content");if(session.role==="employee"){if(currentView==="empCreate"){salesCreateTaskModal();currentView="empHome"}c.innerHTML=currentView==="salesReport"?await viewSalesReport():viewEmpHome();return}if(currentView==="salesReports"){c.innerHTML=await viewAdminSalesReports();return}const views={dashboard:viewDashboard,create:viewCreate,tasks:viewTasks,board:viewBoard,employees:viewEmployees,reports:viewReports,archive:viewArchive,settings:viewSettings};c.innerHTML=(views[currentView]||viewDashboard)();if(currentView==="create")filterEmpByDept();if(currentView==="board")bindBoardDnD();if(currentView==="tasks"&&tasksViewMode==="kanban")bindKanbanDnD()}
 
 function viewDashboard(){const live=TASKS.filter(x=>!x.archived),today=live.filter(x=>taskDay(x)===todayStr()),prod=today.length?Math.round(today.filter(x=>x.status==="completed").length/today.length*100):0;const cards=[["totalTasks",live.length,IC.tasks,"#1B3A5C"],["doneToday",live.filter(x=>x.status==="completed"&&isToday(x.completed_at)).length,IC.check,"#22C55E"],["inProgress",live.filter(x=>x.status==="in_progress").length,IC.pulse,"#2A5082"],["waiting",live.filter(x=>x.status==="waiting").length,IC.tasks,"#5A7A9B"],["delayed",live.filter(x=>x.status==="delayed").length,IC.bolt,"#E8971E"],["cancelled",live.filter(x=>x.status==="cancelled").length,IC.xmark,"#EF4444"],["productivity",prod+"%",IC.trend,"#22C55E"]];const depts=DEPARTMENTS.map(d=>({n:d.name,c:live.filter(x=>x.department===d.name).length})).filter(x=>x.c);return`<h1 class="page-title anim-up">${t("overview")}</h1><div class="page-sub anim-up">${fmtDate(nowISO())}</div><div class="grid stats-grid">${cards.map(([k,v,ic,col],i)=>`<div class="stat-card card" style="animation-delay:${i*50}ms"><div class="row1"><span class="label">${t(k)}</span><span class="stat-ic" style="background:${col}1a;color:${col}">${ic}</span></div><div class="num">${v}</div></div>`).join("")}</div><div class="grid dash-grid"><div class="card" style="padding:24px"><b>${t("byDept")}</b><div style="margin-top:18px">${depts.map((x,i)=>`<div class="hbar-row"><span class="lb">${esc(x.n)}</span><span class="tr"><i style="width:${Math.min(100,x.c*20)}%;background:#E8971E"></i></span><span class="vl">${x.c}</span></div>`).join("")||`<div class="empty">${t("noResults")}</div>`}</div></div><div class="card" style="padding:24px"><b>${t("recentActivity")}</b><div class="timeline" style="margin-top:18px">${HISTORY.slice(0,8).map(h=>`<div class="tl-item"><div>${esc(h.action)} — <span class="tid">${h.task_id}</span></div><div class="ts">${esc(h.actor||"")} • ${fmtFull(h.created_at)}</div></div>`).join("")||`<div class="empty">${t("noResults")}</div>`}</div></div></div>`}
 function viewCreate(){createPrio="medium";return`<h1 class="page-title anim-up">${t("createTask")}</h1><div class="card anim-up" style="padding:30px;max-width:900px"><div class="form-grid"><div><label>${t("customer")}</label><input id="fCust"></div><div><label>${t("department")} *</label><select id="fDept" onchange="filterEmpByDept()"><option value="">${t("chooseDept")}</option>${DEPARTMENTS.map(d=>`<option ${d.name===SETTINGS.defaultDept?"selected":""}>${esc(d.name)}</option>`).join("")}</select></div><div><label>${t("employee")} *</label><select id="fEmp"></select></div><div><label>${t("priority")}</label><div class="prio-group">${PRIOS.map(p=>`<button type="button" class="prio-chip ${p===createPrio?"sel-medium":""}" onclick="createPrio='${p}';renderContent()">${t(p)}</button>`).join("")}</div></div><div><label>${t("dueDate")}</label><input id="fDue" type="date" value="${todayStr()}"></div><div class="full"><label>${t("description")} *</label><textarea id="fDesc" rows="4"></textarea></div><div class="full"><label>${t("notes")}</label><textarea id="fNotes" rows="3"></textarea></div></div><div style="display:flex;gap:12px;margin-top:26px"><button class="btn btn-primary" onclick="createTask()">${IC.plus} ${t("create")}</button><button class="btn btn-outline" onclick="renderContent()">${t("reset")}</button></div></div>`}
@@ -133,8 +133,81 @@ function viewReports(){return`<h1 class="page-title">${t("reports")}</h1><button
 function viewArchive(){return`<h1 class="page-title">${t("archive")}</h1>${renderTaskTable(TASKS.filter(x=>x.archived))}`}
 function viewSettings(){return`<h1 class="page-title">${t("settings")}</h1><div class="card" style="padding:26px;max-width:680px"><label>${t("companyName")}</label><input id="setCo" value="${esc(SETTINGS.company)}"><label style="margin-top:14px">${t("companyNameAr")}</label><input id="setCoAr" value="${esc(SETTINGS.companyAr)}"><label style="margin-top:14px">${t("newPass")}</label><input id="setPass" type="password"><button class="btn btn-primary" style="margin-top:18px" onclick="saveSettings()">${t("save")}</button></div>`}
 async function saveSettings(){SETTINGS.company=$("#setCo").value.trim()||SETTINGS.company;SETTINGS.companyAr=$("#setCoAr").value.trim()||SETTINGS.companyAr;const p=$("#setPass").value.trim();const upd={company:SETTINGS.company,company_ar:SETTINGS.companyAr};if(p){upd.password=p;SETTINGS.password=p}await sb.from("settings").update(upd).eq("id",1);toast(t("dataSaved"),"s");renderSidebar()}
-function viewEmpHome(){const me=empById(session.empId),mine=TASKS.filter(x=>!x.archived&&x.employee_id===session.empId&&taskDay(x)===todayStr()&&x.status!=="cancelled"),done=mine.filter(x=>x.status==="completed").length,pct=mine.length?Math.round(done/mine.length*100):0,circ=2*Math.PI*44;return`<div class="today-hero"><div class="ring"><svg width="104" height="104"><circle cx="52" cy="52" r="44" fill="none" stroke="rgba(27,58,92,.1)" stroke-width="9"/><circle cx="52" cy="52" r="44" fill="none" stroke="#E8971E" stroke-width="9" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-pct/100)}"/></svg><span class="pct">${pct}%</span></div><div><div style="font-size:24px;font-weight:800">${(new Date().getHours()<12?t("goodMorning"):t("goodEvening"))}${LANG==="ar"?"، ":", "}${esc(me.name)}</div><div style="color:var(--muted)">${esc(me.department)}</div><div style="display:flex;gap:24px;margin-top:14px"><b>${mine.length} ${t("todayTasks")}</b><b style="color:var(--success)">${done} ${t("completedT")}</b><b style="color:var(--warning)">${mine.length-done} ${t("remaining")}</b></div></div></div>${isSalesEmp()?`<div class="card" style="padding:18px;margin-bottom:20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>${t("salesCreateTask")}</b><div style="color:var(--muted);font-size:13px">${t("salesCanCreate")}</div></div><button class="btn btn-primary btn-sm" onclick="salesCreateTaskModal()">${IC.plus} ${t("salesCreateTask")}</button></div>`:""}<div class="task-cards">${mine.map(x=>`<div class="tcard card pl-${x.priority}"><div class="thead"><span class="tid">${x.task_id}</span>${statBadge(x.status)}</div><div class="cust">${esc(x.customer_name)}</div><div class="desc">${esc(x.description)}</div><div class="meta">${prioBadge(x.priority)}<span class="badge b-waiting">${esc(x.department)}</span></div>${x.status==="in_progress"?`<textarea id="fb_${x.task_id}" rows="2" placeholder="${t("feedbackPlaceholder")}"></textarea>`:""}<div class="foot">${x.status==="waiting"||x.status==="delayed"?`<button class="btn btn-primary btn-sm" onclick="changeStatus('${x.task_id}','in_progress')">${IC.play} ${t("start")}</button>`:""}${x.status==="in_progress"?`<button class="btn btn-success btn-sm" onclick="completeWithFeedback('${x.task_id}')">${IC.check} ${t("completeWithFeedback")}</button>`:""}<button class="btn btn-outline btn-sm" onclick="openTaskDetails('${x.task_id}')">${t("details")}</button></div></div>`).join("")||`<div class="card empty">${t("noTasksToday")}</div>`}</div>`}
+function viewEmpHome(){
+  const me=empById(session.empId),mine=TASKS.filter(x=>!x.archived&&x.employee_id===session.empId&&taskDay(x)===todayStr()&&x.status!=="cancelled"),done=mine.filter(x=>x.status==="completed").length,pct=mine.length?Math.round(done/mine.length*100):0,circ=2*Math.PI*44;
+  let followupHtml="";
+  if(isSalesEmp()){
+    const selDate=followupFilterDate||todayStr();
+    const mAll=FOLLOWUPS_CACHE.filter(f=>f.employee_id===session.empId);
+    const mToday=mAll.filter(f=>f.created_at.slice(0,10)===todayStr());
+    const mFil=mAll.filter(f=>f.created_at.slice(0,10)===selDate);
+    const cnt=mToday.length,tgt=50,fpct=Math.min(100,Math.round((cnt/tgt)*100));
+    followupHtml=`<div style="margin-top:34px;padding-top:24px;border-top:2px dashed rgba(27,58,92,.1)">
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:16px;color:var(--navy)">${t("clientFollowup")}</h2>
+      <div class="grid stats-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="stat-card card">
+          <div class="row1"><span class="label">${t("todayFollowups")}</span><span class="stat-ic" style="background:rgba(232,151,30,.1);color:var(--gold)">${IC.trend}</span></div>
+          <div class="num" style="font-size:32px">${cnt} <span style="font-size:18px;color:var(--muted)">/ ${tgt}</span></div>
+        </div>
+        <div class="stat-card card">
+          <div class="row1"><span class="label">${t("completion")}</span><span class="stat-ic" style="background:rgba(34,197,94,.1);color:var(--success)">${IC.check}</span></div>
+          <div class="num">${fpct}%</div>
+        </div>
+      </div>
+      <div class="card" style="padding:16px;margin-bottom:18px;display:flex;align-items:end;gap:14px;flex-wrap:wrap">
+        <div style="min-width:210px"><label>${t("filterDate")}</label><input type="date" value="${selDate}" onchange="setFollowupFilterDate(this.value)"></div>
+        <button class="btn btn-primary" onclick="openAddFollowupModal()">${IC.plus} ${t("addFollowup")}</button>
+      </div>
+      <b style="display:block;margin-bottom:12px;font-size:16px">${t("followupLog")} (${fmtDate(selDate)})</b>
+      <div class="card table-wrap anim-up">
+        <table style="min-width:600px">
+          <thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("createdAt")}</th></tr></thead>
+          <tbody>${mFil.length?mFil.map(f=>`<tr><td style="font-weight:600">${esc(f.customer_name)}</td><td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td></tr>`).join(""):`<tr><td colspan="4"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+  
+  const heroHtml = `<div class="today-hero"><div class="ring"><svg width="104" height="104"><circle cx="52" cy="52" r="44" fill="none" stroke="rgba(27,58,92,.1)" stroke-width="9"/><circle cx="52" cy="52" r="44" fill="none" stroke="#E8971E" stroke-width="9" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-pct/100)}"/></svg><span class="pct">${pct}%</span></div><div><div style="font-size:24px;font-weight:800">${(new Date().getHours()<12?t("goodMorning"):t("goodEvening"))}${LANG==="ar"?"، ":", "}${esc(me.name)}</div><div style="color:var(--muted)">${esc(me.department)}</div><div style="display:flex;gap:24px;margin-top:14px"><b>${mine.length} ${t("todayTasks")}</b><b style="color:var(--success)">${done} ${t("completedT")}</b><b style="color:var(--warning)">${mine.length-done} ${t("remaining")}</b></div></div></div>`;
+  const salesCreateHtml = isSalesEmp()?`<div class="card" style="padding:18px;margin-bottom:20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>${t("salesCreateTask")}</b><div style="color:var(--muted);font-size:13px">${t("salesCanCreate")}</div></div><button class="btn btn-primary btn-sm" onclick="salesCreateTaskModal()">${IC.plus} ${t("salesCreateTask")}</button></div>`:"";
+  
+  let contentHtml = "";
+  if(mine.length) {
+    contentHtml = `<div class="task-cards">${mine.map(x=>`<div class="tcard card pl-${x.priority}"><div class="thead"><span class="tid">${x.task_id}</span>${statBadge(x.status)}</div><div class="cust">${esc(x.customer_name)}</div><div class="desc">${esc(x.description)}</div><div class="meta">${prioBadge(x.priority)}<span class="badge b-waiting">${esc(x.department)}</span></div>${x.status==="in_progress"?`<textarea id="fb_${x.task_id}" rows="2" placeholder="${t("feedbackPlaceholder")}"></textarea>`:""}<div class="foot">${x.status==="waiting"||x.status==="delayed"?`<button class="btn btn-primary btn-sm" onclick="changeStatus('${x.task_id}','in_progress')">${IC.play} ${t("start")}</button>`:""}${x.status==="in_progress"?`<button class="btn btn-success btn-sm" onclick="completeWithFeedback('${x.task_id}')">${IC.check} ${t("completeWithFeedback")}</button>`:""}<button class="btn btn-outline btn-sm" onclick="openTaskDetails('${x.task_id}')">${t("details")}</button></div></div>`).join("")}</div>`;
+  } else {
+    // Only show "No Tasks Today" if we are NOT a sales employee, because Sales employee has the follow-ups section right below and we don't want a huge empty box if they have no assigned tasks.
+    if(!isSalesEmp()) {
+      contentHtml = `<div class="card empty">${t("noTasksToday")}</div>`;
+    }
+  }
+
+  return heroHtml + salesCreateHtml + contentHtml + followupHtml;
+}
 async function completeWithFeedback(tid){const x=TASKS.find(x=>x.task_id===tid),fb=$(`#fb_${tid}`)?.value.trim()||"";const upd={status:"completed",completed_at:nowISO(),updated_at:nowISO(),feedback:fb};if(fb)upd.notes=(x.notes||"")+"\n\n"+t("feedback")+": "+fb;const r=await sb.from("tasks").update(upd).eq("task_id",tid);if(r.error)return toast(r.error.message,"e");Object.assign(x,upd);await addHistory(tid,"actCompleted",fb);if(fb)await sb.from("notifications").insert({emp_id:null,title:t("empFeedback").replace("{emp}",empName(session.empId)).replace("{tid}",tid)+": "+fb});toast(fb?t("feedbackSent"):t("taskCompleted"),"s");rerenderCurrent()}
+window.setFollowupFilterDate = function(v){followupFilterDate=v||todayStr();renderContent();}
+window.openAddFollowupModal = function(){
+  openModal(`<h3>${IC.plus} ${t("addFollowup")}<button class="x" onclick="closeModal()">${IC.xmark}</button></h3>
+  <div style="display:grid;gap:14px">
+    <div><label>${t("customer")} *</label><input id="fcCust" autofocus></div>
+    <div style="display:flex;gap:24px;margin-top:6px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcCall" style="width:auto"> ${t("callDone")}</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcEmail" style="width:auto"> ${t("emailSentF")}</label>
+    </div>
+    <button class="btn btn-primary" onclick="saveClientFollowup()">${t("save")}</button>
+  </div>`,420);
+  setTimeout(()=>$("#fcCust")?.focus(),60);
+}
+window.saveClientFollowup = async function(){
+  const cust=$("#fcCust").value.trim();if(!cust){toast(t("fillRequired"),"w");return}
+  const call_done=$("#fcCall").checked,email_sent=$("#fcEmail").checked;
+  const me=empById(session.empId);
+  const item={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent};
+  const{data,error}=await sb.from("sales_followups").insert(item).select().single();
+  if(error){toast(error.message,"e");return}
+  FOLLOWUPS_CACHE.unshift(data);closeModal();toast(t("followupSaved"),"s");
+  renderContent();
+}
+
 function salesCreateTaskModal(){const opts=EMPLOYEES.filter(e=>e.id!==session.empId).map(e=>`<option value="${e.id}">${esc(e.name)} — ${esc(e.department)}</option>`).join("");openModal(`<h3>${t("salesCreateTask")}<button class="x" onclick="closeModal()">${IC.xmark}</button></h3><div style="display:grid;gap:14px"><label>${t("customer")}</label><input id="sCust"><label>${t("assignTo")}</label><select id="sEmp">${opts}</select><label>${t("description")}</label><textarea id="sDesc" rows="3"></textarea><label>${t("notes")}</label><textarea id="sNotes" rows="2"></textarea><button class="btn btn-primary" onclick="saveSalesTask()">${t("create")}</button></div>`,500)}
 async function saveSalesTask(){const me=empById(session.empId),emp=$("#sEmp").value,target=empById(emp),desc=$("#sDesc").value.trim();if(!desc)return toast(t("fillRequired"),"w");const tid=await nextTaskId(),task={task_id:tid,customer_name:$("#sCust").value.trim()||"—",department:target.department,employee_id:emp,description:desc,quantity:1,priority:"medium",status:"waiting",notes:$("#sNotes").value.trim(),due_date:todayStr(),created_by:me.name};const r=await sb.from("tasks").insert(task);if(r.error)return toast(r.error.message,"e");TASKS.unshift({...task,created_at:nowISO(),archived:false});await sb.from("notifications").insert({emp_id:null,title:t("empCreatedTask").replace("{emp}",me.name).replace("{tid}",tid).replace("{target}",target.name)});closeModal();toast(t("taskCreated"),"s");rerenderCurrent()}
 
@@ -157,72 +230,7 @@ async function viewAdminSalesReports(){await loadSalesReports();const rows=[];fo
 async function adminViewReport(id){const r=SR_CACHE.find(x=>x.id===id);await loadSalesClients(id);openModal(`<h3>${t("weeklySalesReport")} — ${esc(r.employee_name)}<button class="x" onclick="closeModal()">${IC.xmark}</button></h3><div class="page-sub">${fmtDate(r.week_start)} → ${fmtDate(r.week_end)}</div><div class="table-wrap"><table><thead><tr><th>${t("companyNameF")}</th><th>${t("contactPerson")}</th><th>${t("phone")}</th><th>${t("callStatus")}</th><th>${t("emailStatus")}</th><th>${t("interested")}</th><th>${t("visit")}</th><th>${t("notes")}</th></tr></thead><tbody>${SR_CLIENTS_CACHE.map(c=>`<tr><td><b>${esc(c.company_name)}</b></td><td>${esc(c.contact_person||"")}</td><td>${esc(c.phone||"")}</td><td>${t(c.call_status||"notCalled")}</td><td>${t(c.email_status||"notSent")}</td><td>${c.interested?"✓":"—"}</td><td>${c.visit_date?fmtDate(c.visit_date):"—"}</td><td>${esc(c.notes||"")}</td></tr>`).join("")}</tbody></table></div>`,800)}
 function downloadDailyPdf(){toast(t("downloading"),"i");window.print()}function downloadReportPdf(){toast(t("downloading"),"i");window.print()}
 
-/* ============ CLIENT FOLLOW-UP (متابعة العميل) ============ */
-function setFollowupFilterDate(v){
-  followupFilterDate=v||todayStr();
-  renderContent();
-}
 
-async function viewClientFollowupPage(){
-  const me=empById(session.empId);
-  const selectedDate=followupFilterDate||todayStr();
-  const mineAll=FOLLOWUPS_CACHE.filter(f=>f.employee_id===session.empId);
-  const mineToday=mineAll.filter(f=>f.created_at.slice(0,10)===todayStr());
-  const mineFiltered=mineAll.filter(f=>f.created_at.slice(0,10)===selectedDate);
-  const count=mineToday.length;
-  const target=50;
-  const pct=Math.min(100,Math.round((count/target)*100));
-
-  return `<h1 class="page-title anim-up">${t("clientFollowup")}</h1>
-  <div class="page-sub anim-up">${esc(me.name)} — ${t("clientFollowup")}</div>
-  <div class="grid stats-grid" style="grid-template-columns:repeat(2,1fr)">
-    <div class="stat-card card">
-      <div class="row1"><span class="label">${t("todayFollowups")}</span><span class="stat-ic" style="background:var(--gold)1a;color:var(--gold)">${IC.trend}</span></div>
-      <div class="num" style="font-size:32px">${count} <span style="font-size:18px;color:var(--muted)">/ ${target}</span></div>
-    </div>
-    <div class="stat-card card">
-      <div class="row1"><span class="label">${t("completion")}</span><span class="stat-ic" style="background:#22C55E1a;color:#22C55E">${IC.check}</span></div>
-      <div class="num">${pct}%</div>
-    </div>
-  </div>
-  <div class="card" style="padding:16px;margin-bottom:18px;display:flex;align-items:end;gap:14px;flex-wrap:wrap">
-    <div style="min-width:210px"><label>${t("filterDate")}</label><input type="date" value="${selectedDate}" onchange="setFollowupFilterDate(this.value)"></div>
-    <button class="btn btn-primary" onclick="openAddFollowupModal()">${IC.plus} ${t("addFollowup")}</button>
-  </div>
-  <b style="display:block;margin-bottom:12px;font-size:16px">${t("followupLog")} (${fmtDate(selectedDate)})</b>
-  <div class="card table-wrap anim-up"><table style="min-width:600px"><thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("createdAt")}</th></tr></thead><tbody>
-  ${mineFiltered.length?mineFiltered.map(f=>`<tr>
-    <td style="font-weight:600">${esc(f.customer_name)}</td>
-    <td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td>
-    <td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td>
-    <td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td>
-  </tr>`).join(""):`<tr><td colspan="4"><div class="empty">${t("noFollowups")}</div></td></tr>`}
-  </tbody></table></div>`;
-}
-
-function openAddFollowupModal(){
-  openModal(`<h3>${IC.plus} ${t("addFollowup")}<button class="x" onclick="closeModal()">${IC.xmark}</button></h3>
-  <div style="display:grid;gap:14px">
-    <div><label>${t("customer")} *</label><input id="fcCust" autofocus></div>
-    <div style="display:flex;gap:24px;margin-top:6px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcCall" style="width:auto"> ${t("callDone")}</label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcEmail" style="width:auto"> ${t("emailSentF")}</label>
-    </div>
-    <button class="btn btn-primary" onclick="saveClientFollowup()">${t("save")}</button>
-  </div>`,420);
-  setTimeout(()=>$("#fcCust")?.focus(),60);
-}
-
-async function saveClientFollowup(){
-  const cust=$("#fcCust").value.trim();if(!cust){toast(t("fillRequired"),"w");return}
-  const call_done=$("#fcCall").checked,email_sent=$("#fcEmail").checked;
-  const me=empById(session.empId);
-  const item={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent};
-  const{data,error}=await sb.from("sales_followups").insert(item).select().single();
-  if(error){toast(error.message,"e");return}
-  FOLLOWUPS_CACHE.unshift(data);closeModal();toast(t("followupSaved"),"s");
-  renderContent();
-}
 function netStatus(){const b=$("#offlineBar");if(!navigator.onLine){b.textContent=t("offline")||"Offline";b.classList.add("on")}else b.classList.remove("on")}window.addEventListener("online",netStatus);window.addEventListener("offline",netStatus);
 
 Object.assign(T.ar,{daily:"يومي",monthly:"شهري",dailySalesReport:"تقرير المبيعات اليومي",monthlySalesReport:"تقرير المبيعات الشهري",salesLog:"سجل التقارير",selectDate:"اختار التاريخ",period:"الفترة",open:"فتح",currentReport:"التقرير الحالي",
