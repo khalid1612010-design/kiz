@@ -211,13 +211,39 @@ window.openAddFollowupModal = function(){
 }
 window.saveClientFollowup = async function(){
   const cust=$("#fcCust").value.trim();if(!cust){toast(t("fillRequired"),"w");return}
-  const phone=$("#fcPhone").value.trim(),email=$("#fcEmailInput").value.trim();
+  const phone=$("#fcPhone")?.value.trim()||"", email=$("#fcEmailInput")?.value.trim()||"";
   const call_done=$("#fcCall").checked,email_sent=$("#fcEmailSent").checked,result=$("#fcResult").value;
   const me=empById(session.empId);
-  const item={employee_id:session.empId,employee_name:me.name,customer_name:cust,phone,email,call_done,email_sent,result};
-  const{data,error}=await sb.from("sales_followups").insert(item).select().single();
-  if(error){toast(error.message,"e");return}
-  FOLLOWUPS_CACHE.unshift(data);closeModal();toast(t("followupSaved"),"s");
+  const base={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent};
+  const full={...base,phone,email,result};
+
+  let{data,error}=await sb.from("sales_followups").insert(full).select().single();
+
+  // Fallback: if some columns don't exist yet in Supabase, retry with fewer fields
+  if(error && /column|schema cache/i.test(error.message||"")){
+    const noPhoneEmail={...base,result};
+    let r2=await sb.from("sales_followups").insert(noPhoneEmail).select().single();
+    if(r2.error && /column|schema cache/i.test(r2.error.message||"")){
+      let r3=await sb.from("sales_followups").insert(base).select().single();
+      data=r3.data;error=r3.error;
+      if(!error) toast(LANG==="ar"?"تم الحفظ — شغّل أمر SQL لإضافة الأعمدة الناقصة":"Saved — run the SQL to add missing columns","w");
+    } else {
+      data=r2.data;error=r2.error;
+      if(!error) toast(LANG==="ar"?"تم الحفظ — شغّل أمر SQL لإضافة عمودي الرقم والإيميل":"Saved — run the SQL to add phone/email columns","w");
+    }
+  }
+
+  if(error){
+    if(/row-level security|policy/i.test(error.message||"")){
+      toast(LANG==="ar"?"صلاحيات الجدول مقفولة — شغّل أمر RLS في Supabase":"RLS blocked — run the RLS SQL in Supabase","e");
+      console.error("RLS ERROR:",error.message);
+    } else {
+      toast(error.message,"e");
+    }
+    return;
+  }
+  FOLLOWUPS_CACHE.unshift(data);closeModal();
+  toast(t("followupSaved"),"s");
   renderContent();
 }
 
