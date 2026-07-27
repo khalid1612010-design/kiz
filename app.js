@@ -92,14 +92,16 @@ function openEmpProfile(id){
     <b style="display:block;margin-bottom:12px;font-size:15px">${t("followupLog")} (${t("today")})</b>
     <div class="table-wrap" style="max-height:220px;overflow-y:auto;border:1px solid rgba(27,58,92,.08)">
       <table style="font-size:13px">
-        <thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
+        <thead><tr><th>${t("customer")}</th><th>${t("phone")}</th><th>${t("email")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
         <tbody>
           ${fToday.map(f=>`<tr>
             <td style="font-weight:600">${esc(f.customer_name)}</td>
+            <td style="direction:ltr">${esc(f.phone||"—")}</td>
+            <td style="direction:ltr;font-size:12px">${esc(f.email||"—")}</td>
             <td>${f.call_done?`✓ ${t("yes")}`:`— ${t("no")}`}</td>
             <td>${f.email_sent?`✓ ${t("yes")}`:`— ${t("no")}`}</td><td>${followupResultBadge(f.result)}</td>
             <td style="color:var(--muted);font-size:12px">${fmtTime(f.created_at)}</td>
-          </tr>`).join("")||`<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--dim)">${t("noFollowups")}</td></tr>`}
+          </tr>`).join("")||`<tr><td colspan="7" style="text-align:center;padding:12px;color:var(--dim)">${t("noFollowups")}</td></tr>`}
         </tbody>
       </table>
     </div>`;
@@ -166,8 +168,8 @@ function viewEmpHome(){
       <b style="display:block;margin-bottom:12px;font-size:16px">${t("followupLog")} (${fmtDate(selDate)})</b>
       <div class="card table-wrap anim-up">
         <table style="min-width:600px">
-          <thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
-          <tbody>${mFil.length?mFil.map(f=>`<tr><td style="font-weight:600">${esc(f.customer_name)}</td><td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${followupResultBadge(f.result)}</td><td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td></tr>`).join(""):`<tr><td colspan="5"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
+          <thead><tr><th>${t("customer")}</th><th>${t("phone")}</th><th>${t("email")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
+          <tbody>${mFil.length?mFil.map(f=>`<tr><td style="font-weight:600">${esc(f.customer_name)}</td><td style="direction:ltr;text-align:left">${esc(f.phone||"—")}</td><td style="direction:ltr;text-align:left;font-size:13px">${esc(f.email||"—")}</td><td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${followupResultBadge(f.result)}</td><td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td></tr>`).join(""):`<tr><td colspan="7"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
         </table>
       </div>
     </div>`;
@@ -194,20 +196,25 @@ window.openAddFollowupModal = function(){
   openModal(`<h3>${IC.plus} ${t("addFollowup")}<button class="x" onclick="closeModal()">${IC.xmark}</button></h3>
   <div style="display:grid;gap:14px">
     <div><label>${t("customer")} *</label><input id="fcCust" autofocus></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><label>${t("phone")}</label><input id="fcPhone" type="tel" style="direction:ltr;text-align:left" placeholder="+20 ..."></div>
+      <div><label>${t("email")}</label><input id="fcEmailInput" type="email" style="direction:ltr;text-align:left" placeholder="example@company.com"></div>
+    </div>
     <div style="display:flex;gap:24px;margin-top:6px">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcCall" style="width:auto"> ${t("callDone")}</label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcEmail" style="width:auto"> ${t("emailSentF")}</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcEmailSent" style="width:auto"> ${t("emailSentF")}</label>
     </div>
     <div><label>${t("followupResult")} *</label><select id="fcResult"><option value="positive">🟢 ${t("fr_positive")}</option><option value="followup" selected>🟡 ${t("fr_followup")}</option><option value="negative">🔴 ${t("fr_negative")}</option><option value="no_answer">⚫ ${t("fr_no_answer")}</option></select></div>
     <button class="btn btn-primary" onclick="saveClientFollowup()">${t("save")}</button>
-  </div>`,420);
+  </div>`,520);
   setTimeout(()=>$("#fcCust")?.focus(),60);
 }
 window.saveClientFollowup = async function(){
   const cust=$("#fcCust").value.trim();if(!cust){toast(t("fillRequired"),"w");return}
-  const call_done=$("#fcCall").checked,email_sent=$("#fcEmail").checked,result=$("#fcResult").value;
+  const phone=$("#fcPhone").value.trim(),email=$("#fcEmailInput").value.trim();
+  const call_done=$("#fcCall").checked,email_sent=$("#fcEmailSent").checked,result=$("#fcResult").value;
   const me=empById(session.empId);
-  const item={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent,result};
+  const item={employee_id:session.empId,employee_name:me.name,customer_name:cust,phone,email,call_done,email_sent,result};
   const{data,error}=await sb.from("sales_followups").insert(item).select().single();
   if(error){toast(error.message,"e");return}
   FOLLOWUPS_CACHE.unshift(data);closeModal();toast(t("followupSaved"),"s");
