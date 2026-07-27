@@ -67,6 +67,11 @@ async function openTaskDetails(tid){const x=TASKS.find(x=>x.task_id===tid);if(!x
 function todayBoardTasks(){return TASKS.filter(x=>!x.archived&&taskDay(x)===todayStr())}
 function viewBoard(){const tasks=todayBoardTasks();return`<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><h1 class="page-title">${t("planBoard")}</h1><button class="btn btn-outline btn-sm" onclick="downloadDailyPdf()">${IC.archive} ${t("downloadPdf")}</button></div><div class="board">${EMPLOYEES.map(e=>{const mine=tasks.filter(x=>x.employee_id===e.id);return`<div class="bcol" data-emp="${e.id}"><div class="bcol-head"><div class="avatar">${esc(e.name[0])}</div><div><b>${esc(e.name)}</b><div style="color:var(--muted);font-size:12px">${esc(e.department)}</div></div><span class="cnt">${mine.length}</span></div><div class="bcol-body">${mine.map(x=>`<div class="bitem ${x.status==="completed"?"done":""}" draggable="true" data-tid="${x.task_id}"><div><span class="chk" onclick="changeStatus('${x.task_id}','completed')">${x.status==="completed"?"✓":""}</span> <span class="txt">${esc(x.description)}</span></div><div style="font-size:12px;color:var(--muted)">${esc(x.customer_name)}</div></div>`).join("")}</div></div>`}).join("")}</div>`}
 function bindBoardDnD(){let tid=null;document.querySelectorAll(".bitem").forEach(e=>{e.ondragstart=()=>tid=e.dataset.tid});document.querySelectorAll(".bcol").forEach(c=>{c.ondragover=e=>e.preventDefault();c.ondrop=async()=>{const x=TASKS.find(x=>x.task_id===tid),em=empById(c.dataset.emp);if(x&&em){await sb.from("tasks").update({employee_id:em.id,department:em.department}).eq("task_id",tid);x.employee_id=em.id;x.department=em.department;rerenderCurrent()}}})}
+function followupResultBadge(result){
+  const map={positive:["🟢","b-completed"],followup:["🟡","b-delayed"],negative:["🔴","b-cancelled"],no_answer:["⚫","b-waiting"]};
+  const m=map[result||"followup"]||map.followup;
+  return `<span class="badge ${m[1]}">${m[0]} ${t("fr_"+(result||"followup"))}</span>`;
+}
 function openEmpProfile(id){
   const e=empById(id);if(!e)return;
   const isSales=e.department==="Sales";
@@ -87,14 +92,14 @@ function openEmpProfile(id){
     <b style="display:block;margin-bottom:12px;font-size:15px">${t("followupLog")} (${t("today")})</b>
     <div class="table-wrap" style="max-height:220px;overflow-y:auto;border:1px solid rgba(27,58,92,.08)">
       <table style="font-size:13px">
-        <thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("createdAt")}</th></tr></thead>
+        <thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
         <tbody>
           ${fToday.map(f=>`<tr>
             <td style="font-weight:600">${esc(f.customer_name)}</td>
             <td>${f.call_done?`✓ ${t("yes")}`:`— ${t("no")}`}</td>
-            <td>${f.email_sent?`✓ ${t("yes")}`:`— ${t("no")}`}</td>
+            <td>${f.email_sent?`✓ ${t("yes")}`:`— ${t("no")}`}</td><td>${followupResultBadge(f.result)}</td>
             <td style="color:var(--muted);font-size:12px">${fmtTime(f.created_at)}</td>
-          </tr>`).join("")||`<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--dim)">${t("noFollowups")}</td></tr>`}
+          </tr>`).join("")||`<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--dim)">${t("noFollowups")}</td></tr>`}
         </tbody>
       </table>
     </div>`;
@@ -161,8 +166,8 @@ function viewEmpHome(){
       <b style="display:block;margin-bottom:12px;font-size:16px">${t("followupLog")} (${fmtDate(selDate)})</b>
       <div class="card table-wrap anim-up">
         <table style="min-width:600px">
-          <thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("createdAt")}</th></tr></thead>
-          <tbody>${mFil.length?mFil.map(f=>`<tr><td style="font-weight:600">${esc(f.customer_name)}</td><td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td></tr>`).join(""):`<tr><td colspan="4"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
+          <thead><tr><th>${t("customer")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
+          <tbody>${mFil.length?mFil.map(f=>`<tr><td style="font-weight:600">${esc(f.customer_name)}</td><td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${followupResultBadge(f.result)}</td><td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td></tr>`).join(""):`<tr><td colspan="5"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
         </table>
       </div>
     </div>`;
@@ -193,15 +198,16 @@ window.openAddFollowupModal = function(){
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcCall" style="width:auto"> ${t("callDone")}</label>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcEmail" style="width:auto"> ${t("emailSentF")}</label>
     </div>
+    <div><label>${t("followupResult")} *</label><select id="fcResult"><option value="positive">🟢 ${t("fr_positive")}</option><option value="followup" selected>🟡 ${t("fr_followup")}</option><option value="negative">🔴 ${t("fr_negative")}</option><option value="no_answer">⚫ ${t("fr_no_answer")}</option></select></div>
     <button class="btn btn-primary" onclick="saveClientFollowup()">${t("save")}</button>
   </div>`,420);
   setTimeout(()=>$("#fcCust")?.focus(),60);
 }
 window.saveClientFollowup = async function(){
   const cust=$("#fcCust").value.trim();if(!cust){toast(t("fillRequired"),"w");return}
-  const call_done=$("#fcCall").checked,email_sent=$("#fcEmail").checked;
+  const call_done=$("#fcCall").checked,email_sent=$("#fcEmail").checked,result=$("#fcResult").value;
   const me=empById(session.empId);
-  const item={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent};
+  const item={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent,result};
   const{data,error}=await sb.from("sales_followups").insert(item).select().single();
   if(error){toast(error.message,"e");return}
   FOLLOWUPS_CACHE.unshift(data);closeModal();toast(t("followupSaved"),"s");
@@ -234,9 +240,9 @@ function downloadDailyPdf(){toast(t("downloading"),"i");window.print()}function 
 function netStatus(){const b=$("#offlineBar");if(!navigator.onLine){b.textContent=t("offline")||"Offline";b.classList.add("on")}else b.classList.remove("on")}window.addEventListener("online",netStatus);window.addEventListener("offline",netStatus);
 
 Object.assign(T.ar,{daily:"يومي",monthly:"شهري",dailySalesReport:"تقرير المبيعات اليومي",monthlySalesReport:"تقرير المبيعات الشهري",salesLog:"سجل التقارير",selectDate:"اختار التاريخ",period:"الفترة",open:"فتح",currentReport:"التقرير الحالي",
-  clientFollowup:"متابعة العميل",todayFollowups:"العمليات المضافة اليوم",addFollowup:"إضافة متابعة جديدة",callDone:"تمت مكالمة (كول)",emailSentF:"تم إرسال إيميل",followupSaved:"تم حفظ المتابعة",followupLog:"سجل المتابعات اليومية",filterDate:"تاريخ المتابعة",noFollowups:"لا توجد عمليات متابعة لهذا اليوم"});
+  clientFollowup:"متابعة العميل",todayFollowups:"العمليات المضافة اليوم",addFollowup:"إضافة متابعة جديدة",callDone:"تمت مكالمة (كول)",emailSentF:"تم إرسال إيميل",followupSaved:"تم حفظ المتابعة",followupLog:"سجل المتابعات اليومية",filterDate:"تاريخ المتابعة",noFollowups:"لا توجد عمليات متابعة لهذا اليوم",followupResult:"نتيجة المتابعة",fr_positive:"مهتم",fr_followup:"محتاج متابعة لاحقًا",fr_negative:"غير مهتم",fr_no_answer:"لم يرد"});
 Object.assign(T.en,{daily:"Daily",monthly:"Monthly",dailySalesReport:"Daily Sales Report",monthlySalesReport:"Monthly Sales Report",salesLog:"Reports Log",selectDate:"Select Date",period:"Period",open:"Open",currentReport:"Current Report",
-  clientFollowup:"Client Follow-up",todayFollowups:"Today's Follow-ups",addFollowup:"Add New Follow-up",callDone:"Call Done",emailSentF:"Email Sent",followupSaved:"Follow-up saved",followupLog:"Daily Follow-ups Log",filterDate:"Follow-up Date",noFollowups:"No follow-ups for this day"});
+  clientFollowup:"Client Follow-up",todayFollowups:"Today's Follow-ups",addFollowup:"Add New Follow-up",callDone:"Call Done",emailSentF:"Email Sent",followupSaved:"Follow-up saved",followupLog:"Daily Follow-ups Log",filterDate:"Follow-up Date",noFollowups:"No follow-ups for this day",followupResult:"Follow-up Result",fr_positive:"Positive",fr_followup:"Follow Up",fr_negative:"Negative",fr_no_answer:"No Answer"});
 
 function getSalesRange(mode=salesPeriodMode,date=salesPeriodDate){
   const d=new Date(date||todayStr());
