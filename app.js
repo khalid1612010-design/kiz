@@ -104,7 +104,7 @@ function openEmpProfile(id){
     <b style="display:block;margin-bottom:12px;font-size:15px">${t("followupLog")} (${t("today")})</b>
     <div class="table-wrap" style="max-height:220px;overflow-y:auto;border:1px solid rgba(27,58,92,.08)">
       <table style="font-size:13px">
-        <thead><tr><th>${t("customer")}</th><th>${t("phone")}</th><th>${t("email")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
+        <thead><tr><th>${t("customer")}</th><th>${t("phone")}</th><th>${t("email")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("followupNote")}</th><th>${t("createdAt")}</th></tr></thead>
         <tbody>
           ${fToday.map(f=>`<tr>
             <td style="font-weight:600">${esc(f.customer_name)}</td>
@@ -112,8 +112,9 @@ function openEmpProfile(id){
             <td style="direction:ltr;font-size:12px">${esc(f.email||"—")}</td>
             <td>${f.call_done?`✓ ${t("yes")}`:`— ${t("no")}`}</td>
             <td>${f.email_sent?`✓ ${t("yes")}`:`— ${t("no")}`}</td><td>${followupResultBadge(f.result)}</td>
+            <td style="max-width:180px;font-size:12px;color:var(--muted)">${f.note?esc(f.note):"—"}</td>
             <td style="color:var(--muted);font-size:12px">${fmtTime(f.created_at)}</td>
-          </tr>`).join("")||`<tr><td colspan="7" style="text-align:center;padding:12px;color:var(--dim)">${t("noFollowups")}</td></tr>`}
+          </tr>`).join("")||`<tr><td colspan="8" style="text-align:center;padding:12px;color:var(--dim)">${t("noFollowups")}</td></tr>`}
         </tbody>
       </table>
     </div>`;
@@ -180,8 +181,8 @@ function viewEmpHome(){
       <b style="display:block;margin-bottom:12px;font-size:16px">${t("followupLog")} (${fmtDate(selDate)})</b>
       <div class="card table-wrap anim-up">
         <table style="min-width:600px">
-          <thead><tr><th>${t("customer")}</th><th>${t("phone")}</th><th>${t("email")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("createdAt")}</th></tr></thead>
-          <tbody>${mFil.length?mFil.map(f=>`<tr><td style="font-weight:600">${esc(f.customer_name)}</td><td style="direction:ltr;text-align:left">${esc(f.phone||"—")}</td><td style="direction:ltr;text-align:left;font-size:13px">${esc(f.email||"—")}</td><td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${followupResultBadge(f.result)}</td><td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td></tr>`).join(""):`<tr><td colspan="7"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
+          <thead><tr><th>${t("customer")}</th><th>${t("phone")}</th><th>${t("email")}</th><th>${t("callDone")}</th><th>${t("emailSentF")}</th><th>${t("followupResult")}</th><th>${t("followupNote")}</th><th>${t("createdAt")}</th></tr></thead>
+          <tbody>${mFil.length?mFil.map(f=>`<tr><td style="font-weight:600">${esc(f.customer_name)}</td><td style="direction:ltr;text-align:left">${esc(f.phone||"—")}</td><td style="direction:ltr;text-align:left;font-size:13px">${esc(f.email||"—")}</td><td>${f.call_done?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${f.email_sent?`<span class="badge b-completed">✓ ${t("yes")}</span>`:`<span class="badge b-waiting">${t("no")}</span>`}</td><td>${followupResultBadge(f.result)}</td><td style="max-width:200px;font-size:13px;color:var(--muted)">${f.note?esc(f.note):"—"}</td><td style="color:var(--muted);font-size:13px">${fmtTime(f.created_at)}</td></tr>`).join(""):`<tr><td colspan="8"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
         </table>
       </div>
     </div>`;
@@ -217,6 +218,7 @@ window.openAddFollowupModal = function(){
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="fcEmailSent" style="width:auto"> ${t("emailSentF")}</label>
     </div>
     <div><label>${t("followupResult")} *</label><select id="fcResult"><option value="positive">🟢 ${t("fr_positive")}</option><option value="followup" selected>🟡 ${t("fr_followup")}</option><option value="negative">🔴 ${t("fr_negative")}</option><option value="no_answer">⚫ ${t("fr_no_answer")}</option></select></div>
+    <div><label>${t("followupNote")}</label><textarea id="fcNote" rows="3" placeholder="${t("followupNotePlaceholder")}"></textarea></div>
     <button class="btn btn-primary" onclick="saveClientFollowup()">${t("save")}</button>
   </div>`,520);
   setTimeout(()=>$("#fcCust")?.focus(),60);
@@ -224,24 +226,32 @@ window.openAddFollowupModal = function(){
 window.saveClientFollowup = async function(){
   const cust=$("#fcCust").value.trim();if(!cust){toast(t("fillRequired"),"w");return}
   const phone=$("#fcPhone")?.value.trim()||"", email=$("#fcEmailInput")?.value.trim()||"";
+  const note=$("#fcNote")?.value.trim()||"";
   const call_done=$("#fcCall").checked,email_sent=$("#fcEmailSent").checked,result=$("#fcResult").value;
   const me=empById(session.empId);
   const base={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent};
-  const full={...base,phone,email,result};
+  const full={...base,phone,email,result,note};
 
   let{data,error}=await sb.from("sales_followups").insert(full).select().single();
 
   // Fallback: if some columns don't exist yet in Supabase, retry with fewer fields
   if(error && /column|schema cache/i.test(error.message||"")){
-    const noPhoneEmail={...base,result};
-    let r2=await sb.from("sales_followups").insert(noPhoneEmail).select().single();
-    if(r2.error && /column|schema cache/i.test(r2.error.message||"")){
-      let r3=await sb.from("sales_followups").insert(base).select().single();
-      data=r3.data;error=r3.error;
-      if(!error) toast(LANG==="ar"?"تم الحفظ — شغّل أمر SQL لإضافة الأعمدة الناقصة":"Saved — run the SQL to add missing columns","w");
+    const noNote={...base,phone,email,result};
+    let r1=await sb.from("sales_followups").insert(noNote).select().single();
+    if(r1.error && /column|schema cache/i.test(r1.error.message||"")){
+      const noPhoneEmail={...base,result};
+      let r2=await sb.from("sales_followups").insert(noPhoneEmail).select().single();
+      if(r2.error && /column|schema cache/i.test(r2.error.message||"")){
+        let r3=await sb.from("sales_followups").insert(base).select().single();
+        data=r3.data;error=r3.error;
+        if(!error) toast(LANG==="ar"?"تم الحفظ — شغّل أمر SQL لإضافة الأعمدة الناقصة":"Saved — run the SQL to add missing columns","w");
+      } else {
+        data=r2.data;error=r2.error;
+        if(!error) toast(LANG==="ar"?"تم الحفظ — شغّل أمر SQL لإضافة الأعمدة الناقصة":"Saved — run the SQL to add missing columns","w");
+      }
     } else {
-      data=r2.data;error=r2.error;
-      if(!error) toast(LANG==="ar"?"تم الحفظ — شغّل أمر SQL لإضافة عمودي الرقم والإيميل":"Saved — run the SQL to add phone/email columns","w");
+      data=r1.data;error=r1.error;
+      if(!error) toast(LANG==="ar"?"تم الحفظ — شغّل أمر SQL لإضافة عمود الملاحظة":"Saved — run the SQL to add note column","w");
     }
   }
 
@@ -285,9 +295,9 @@ function downloadDailyPdf(){toast(t("downloading"),"i");window.print()}function 
 function netStatus(){const b=$("#offlineBar");if(!navigator.onLine){b.textContent=t("offline")||"Offline";b.classList.add("on")}else b.classList.remove("on")}window.addEventListener("online",netStatus);window.addEventListener("offline",netStatus);
 
 Object.assign(T.ar,{daily:"يومي",monthly:"شهري",dailySalesReport:"تقرير المبيعات اليومي",monthlySalesReport:"تقرير المبيعات الشهري",salesLog:"سجل التقارير",selectDate:"اختار التاريخ",period:"الفترة",open:"فتح",currentReport:"التقرير الحالي",
-  clientFollowup:"متابعة العميل",todayFollowups:"العمليات المضافة اليوم",addFollowup:"إضافة متابعة جديدة",callDone:"تمت مكالمة (كول)",emailSentF:"تم إرسال إيميل",followupSaved:"تم حفظ المتابعة",followupLog:"سجل المتابعات اليومية",filterDate:"تاريخ المتابعة",noFollowups:"لا توجد عمليات متابعة لهذا اليوم",followupResult:"نتيجة المتابعة",fr_positive:"مهتم",fr_followup:"محتاج متابعة لاحقًا",fr_negative:"غير مهتم",fr_no_answer:"لم يرد"});
+  clientFollowup:"متابعة العميل",todayFollowups:"العمليات المضافة اليوم",addFollowup:"إضافة متابعة جديدة",callDone:"تمت مكالمة (كول)",emailSentF:"تم إرسال إيميل",followupSaved:"تم حفظ المتابعة",followupLog:"سجل المتابعات اليومية",filterDate:"تاريخ المتابعة",noFollowups:"لا توجد عمليات متابعة لهذا اليوم",followupResult:"نتيجة المتابعة",fr_positive:"مهتم",fr_followup:"محتاج متابعة لاحقًا",fr_negative:"غير مهتم",fr_no_answer:"لم يرد",followupNote:"ملاحظة",followupNotePlaceholder:"اكتب أي ملاحظة عن العميل أو المكالمة..."});
 Object.assign(T.en,{daily:"Daily",monthly:"Monthly",dailySalesReport:"Daily Sales Report",monthlySalesReport:"Monthly Sales Report",salesLog:"Reports Log",selectDate:"Select Date",period:"Period",open:"Open",currentReport:"Current Report",
-  clientFollowup:"Client Follow-up",todayFollowups:"Today's Follow-ups",addFollowup:"Add New Follow-up",callDone:"Call Done",emailSentF:"Email Sent",followupSaved:"Follow-up saved",followupLog:"Daily Follow-ups Log",filterDate:"Follow-up Date",noFollowups:"No follow-ups for this day",followupResult:"Follow-up Result",fr_positive:"Positive",fr_followup:"Follow Up",fr_negative:"Negative",fr_no_answer:"No Answer"});
+  clientFollowup:"Client Follow-up",todayFollowups:"Today's Follow-ups",addFollowup:"Add New Follow-up",callDone:"Call Done",emailSentF:"Email Sent",followupSaved:"Follow-up saved",followupLog:"Daily Follow-ups Log",filterDate:"Follow-up Date",noFollowups:"No follow-ups for this day",followupResult:"Follow-up Result",fr_positive:"Positive",fr_followup:"Follow Up",fr_negative:"Negative",fr_no_answer:"No Answer",followupNote:"Note",followupNotePlaceholder:"Write any note about the client or the call..."});
 
 function getSalesRange(mode=salesPeriodMode,date=salesPeriodDate){
   const d=new Date(date||todayStr());
