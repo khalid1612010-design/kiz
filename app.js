@@ -47,10 +47,10 @@ function rerenderCurrent(){if(session)renderContent()}
 function renderLogin(){let inner="";if(loginStep==="root")inner=`<div class="brand-logo"><img src="${LOGO_URL}"></div><h1>${t("loginTitle")}</h1><div class="sub">${t("loginSub")}</div><button class="login-btn btn-blue" onclick="loginStep='emp';renderLogin()">${IC.users}${t("loginEmp")}</button><button class="login-btn btn-ghost" onclick="loginStep='admin';renderLogin()">${IC.gear}${t("loginAdmin")}</button><button class="lang-pill" onclick="switchLang()">${IC.globe} ${LANG==="ar"?"English":"العربية"}</button>`;else if(loginStep==="emp")inner=`<span class="back-link" onclick="loginStep='root';renderLogin()">‹ ${t("back")}</span><div class="brand-logo"><img src="${LOGO_URL}"></div><h1>${t("loginEmp")}</h1><div class="sub">${t("chooseName")}</div><select id="empSel"><option value="">${t("chooseName")}</option>${EMPLOYEES.map(e=>`<option value="${e.id}">${esc(e.name)} — ${esc(e.department)}</option>`).join("")}</select><button class="login-btn btn-blue" style="margin-top:16px" onclick="empLogin()">${t("enter")}</button>`;else inner=`<span class="back-link" onclick="loginStep='root';renderLogin()">‹ ${t("back")}</span><div class="brand-logo"><img src="${LOGO_URL}"></div><h1>${t("loginAdmin")}</h1><div class="sub">${t("adminPass")}</div><input id="adminPass" type="password" placeholder="••••" onkeydown="if(event.key==='Enter')adminLogin()"><button class="login-btn btn-blue" style="margin-top:16px" onclick="adminLogin()">${t("enter")}</button>`;$("#loginView").innerHTML=`<div class="login-card">${inner}</div>`}
 function empLogin(){const id=$("#empSel").value;if(!id)return toast(t("fillRequired"),"w");setSession({role:"employee",empId:id});currentView="empHome";render()}function adminLogin(){if($("#adminPass").value===SETTINGS.password){setSession({role:"admin"});currentView="dashboard";render()}else toast(t("wrongPass"),"e")}function logout(){setSession(null);currentView="dashboard";render()}function switchLang(){LANG=LANG==="ar"?"en":"ar";localStorage.setItem("kz_lang",LANG);document.documentElement.lang=LANG;document.documentElement.dir=LANG==="ar"?"rtl":"ltr";render()}
 function isSalesEmp(){return empById(session?.empId)?.department==="Sales"}function nav(v){currentView=v;toggleSide(false);render()}function toggleSide(open){$("#sidebar")?.classList.toggle("open",open);$("#sideOverlay")?.classList.toggle("on",open)}
-function renderSidebar(){let items=session.role==="admin"?[["dashboard",IC.dash,"dashboard"],["create",IC.plus,"createTask"],["tasks",IC.tasks,"tasks"],["board",IC.board,"planBoard"],["employees",IC.users,"employees"],["reports",IC.chart,"reports"],["salesReports",IC.chart,"salesReports"],["archive",IC.archive,"archive"],["settings",IC.gear,"settings"]]:[["empHome",IC.dash,"todayTasks"]];if(session.role==="employee"&&isSalesEmp())items.push(["empCreate",IC.plus,"salesCreateTask"],["salesReport",IC.chart,"salesReports"]);$("#sidebar").innerHTML=`<div class="side-head"><div class="side-logo"><img src="${LOGO_URL}"></div><div><b>${esc(SETTINGS.company)}</b><span>${esc(LANG==="ar"?SETTINGS.companyAr:"Kaizen Adv. Agency")}</span></div></div><nav class="side-nav">${items.map(([v,ic,l])=>`<button class="nav-item ${currentView===v?"active":""}" onclick="nav('${v}')">${ic}<span>${t(l)}</span></button>`).join("")}</nav><div class="side-foot"><button class="logout-btn" onclick="logout()">${IC.out}<span>${t("logout")}</span></button></div>`}
+function renderSidebar(){let items=session.role==="admin"?[["dashboard",IC.dash,"dashboard"],["create",IC.plus,"createTask"],["tasks",IC.tasks,"tasks"],["board",IC.board,"planBoard"],["employees",IC.users,"employees"],["reports",IC.chart,"reports"],["salesReports",IC.chart,"salesReports"],["archive",IC.archive,"archive"],["settings",IC.gear,"settings"]]:[["empHome",IC.dash,"todayTasks"]];if(session.role==="employee"&&isSalesEmp())items.push(["clientFollowup",IC.users,"clientFollowup"],["empCreate",IC.plus,"salesCreateTask"],["salesReport",IC.chart,"salesReports"]);$("#sidebar").innerHTML=`<div class="side-head"><div class="side-logo"><img src="${LOGO_URL}"></div><div><b>${esc(SETTINGS.company)}</b><span>${esc(LANG==="ar"?SETTINGS.companyAr:"Kaizen Adv. Agency")}</span></div></div><nav class="side-nav">${items.map(([v,ic,l])=>`<button class="nav-item ${currentView===v?"active":""}" onclick="nav('${v}')">${ic}<span>${t(l)}</span></button>`).join("")}</nav><div class="side-foot"><button class="logout-btn" onclick="logout()">${IC.out}<span>${t("logout")}</span></button></div>`}
 function renderTopbar(){$("#topbar").innerHTML=`<button class="icon-btn menu-btn" onclick="toggleSide(true)">${IC.menu}</button><div class="top-date"><b id="tbDate"></b><span id="tbTime"></span></div><div class="search-wrap">${IC.search}<input id="topSearch" placeholder="${t("search")}" value="${esc(topSearch)}"></div><button class="lang-pill" style="margin:0" onclick="switchLang()">${IC.globe} ${LANG==="ar"?"English":"العربية"}</button><button class="icon-btn" onclick="logout()">${IC.out}</button>`;tickClock();$("#topSearch").oninput=e=>{topSearch=e.target.value;if(session.role==="admin"&&topSearch.trim())currentView="tasks";renderSidebar();renderContent()}}
 let clockTimer;function tickClock(){const d=new Date();if($("#tbDate"))$("#tbDate").textContent=d.toLocaleDateString(LANG==="ar"?"ar-EG":"en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});if($("#tbTime"))$("#tbTime").textContent=d.toLocaleTimeString(LANG==="ar"?"ar-EG":"en-GB");clearTimeout(clockTimer);clockTimer=setTimeout(tickClock,1000)}
-async function renderContent(){const c=$("#content");if(session.role==="employee"){if(currentView==="empCreate"){salesCreateTaskModal();currentView="empHome"}c.innerHTML=currentView==="salesReport"?await viewSalesReport():viewEmpHome();return}if(currentView==="salesReports"){c.innerHTML=await viewAdminSalesReports();return}const views={dashboard:viewDashboard,create:viewCreate,tasks:viewTasks,board:viewBoard,employees:viewEmployees,reports:viewReports,archive:viewArchive,settings:viewSettings};c.innerHTML=(views[currentView]||viewDashboard)();if(currentView==="create")filterEmpByDept();if(currentView==="board")bindBoardDnD();if(currentView==="tasks"&&tasksViewMode==="kanban")bindKanbanDnD()}
+async function renderContent(){const c=$("#content");if(session.role==="employee"){if(currentView==="empCreate"){salesCreateTaskModal();currentView="empHome"}if(currentView==="clientFollowup"){c.innerHTML=viewFollowupGrid();return}c.innerHTML=currentView==="salesReport"?await viewSalesReport():viewEmpHome();return}if(currentView==="salesReports"){c.innerHTML=await viewAdminSalesReports();return}const views={dashboard:viewDashboard,create:viewCreate,tasks:viewTasks,board:viewBoard,employees:viewEmployees,reports:viewReports,archive:viewArchive,settings:viewSettings};c.innerHTML=(views[currentView]||viewDashboard)();if(currentView==="create")filterEmpByDept();if(currentView==="board")bindBoardDnD();if(currentView==="tasks"&&tasksViewMode==="kanban")bindKanbanDnD()}
 
 function viewDashboard(){const live=TASKS.filter(x=>!x.archived),today=live.filter(x=>taskDay(x)===todayStr()),prod=today.length?Math.round(today.filter(x=>x.status==="completed").length/today.length*100):0;const cards=[["totalTasks",live.length,IC.tasks,"#1B3A5C"],["doneToday",live.filter(x=>x.status==="completed"&&isToday(x.completed_at)).length,IC.check,"#22C55E"],["inProgress",live.filter(x=>x.status==="in_progress").length,IC.pulse,"#2A5082"],["waiting",live.filter(x=>x.status==="waiting").length,IC.tasks,"#5A7A9B"],["delayed",live.filter(x=>x.status==="delayed").length,IC.bolt,"#E8971E"],["cancelled",live.filter(x=>x.status==="cancelled").length,IC.xmark,"#EF4444"],["productivity",prod+"%",IC.trend,"#22C55E"]];const depts=DEPARTMENTS.map(d=>({n:d.name,c:live.filter(x=>x.department===d.name).length})).filter(x=>x.c);return`<h1 class="page-title anim-up">${t("overview")}</h1><div class="page-sub anim-up">${fmtDate(nowISO())}</div><div class="grid stats-grid">${cards.map(([k,v,ic,col],i)=>`<div class="stat-card card" style="animation-delay:${i*50}ms"><div class="row1"><span class="label">${t(k)}</span><span class="stat-ic" style="background:${col}1a;color:${col}">${ic}</span></div><div class="num">${v}</div></div>`).join("")}</div><div class="grid dash-grid"><div class="card" style="padding:24px"><b>${t("byDept")}</b><div style="margin-top:18px">${depts.map((x,i)=>`<div class="hbar-row"><span class="lb">${esc(x.n)}</span><span class="tr"><i style="width:${Math.min(100,x.c*20)}%;background:#E8971E"></i></span><span class="vl">${x.c}</span></div>`).join("")||`<div class="empty">${t("noResults")}</div>`}</div></div><div class="card" style="padding:24px"><b>${t("recentActivity")}</b><div class="timeline" style="margin-top:18px">${HISTORY.slice(0,8).map(h=>`<div class="tl-item"><div>${esc(h.action)} — <span class="tid">${h.task_id}</span></div><div class="ts">${esc(h.actor||"")} • ${fmtFull(h.created_at)}</div></div>`).join("")||`<div class="empty">${t("noResults")}</div>`}</div></div></div>`}
 function viewCreate(){
@@ -156,7 +156,7 @@ async function saveSettings(){SETTINGS.company=$("#setCo").value.trim()||SETTING
 function viewEmpHome(){
   const me=empById(session.empId),mine=TASKS.filter(x=>!x.archived&&x.employee_id===session.empId&&taskDay(x)===todayStr()&&x.status!=="cancelled"),done=mine.filter(x=>x.status==="completed").length,pct=mine.length?Math.round(done/mine.length*100):0,circ=2*Math.PI*44;
   let followupHtml="";
-  if(isSalesEmp()){
+  if(false){
     const selDate=followupFilterDate||todayStr();
     const mAll=FOLLOWUPS_CACHE.filter(f=>f.employee_id===session.empId);
     const mToday=mAll.filter(f=>f.created_at.slice(0,10)===todayStr());
@@ -269,6 +269,201 @@ window.saveClientFollowup = async function(){
   renderContent();
 }
 
+/* ============ CLIENT FOLLOW-UP GRID PAGE (50 rows) ============ */
+const FU_TARGET = 50;
+function viewFollowupGrid(){
+  const me = empById(session.empId);
+  const selDate = followupFilterDate || todayStr();
+  const mAll = FOLLOWUPS_CACHE.filter(f=>f.employee_id===session.empId);
+  const saved = mAll.filter(f=>f.created_at.slice(0,10)===selDate)
+                    .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const todayCount = mAll.filter(f=>f.created_at.slice(0,10)===todayStr()).length;
+  const pctToday = Math.min(100, Math.round((todayCount/FU_TARGET)*100));
+  const isToday = selDate === todayStr();
+
+  const resOpts = r => ["positive","followup","negative","no_answer"]
+    .map(v=>`<option value="${v}" ${v===r?"selected":""}>${({positive:"🟢",followup:"🟡",negative:"🔴",no_answer:"⚫"})[v]} ${t("fr_"+v)}</option>`).join("");
+
+  let rows = "";
+  // Saved rows (read-only)
+  saved.forEach((f,i)=>{
+    rows += `<tr class="fu-saved">
+      <td class="fu-no">${i+1}</td>
+      <td><b>${esc(f.customer_name)}</b></td>
+      <td style="direction:ltr;text-align:left">${esc(f.phone||"—")}</td>
+      <td style="direction:ltr;text-align:left;font-size:13px">${esc(f.email||"—")}</td>
+      <td>${f.call_done?`<span class="badge b-completed">✓</span>`:`<span class="badge b-waiting">—</span>`}</td>
+      <td>${f.email_sent?`<span class="badge b-completed">✓</span>`:`<span class="badge b-waiting">—</span>`}</td>
+      <td>${followupResultBadge(f.result)}</td>
+      <td style="font-size:12.5px;color:var(--muted);max-width:180px">${f.note?esc(f.note):"—"}</td>
+      <td style="text-align:center"><span class="fu-ok" title="${fmtTime(f.created_at)}">✓</span></td>
+    </tr>`;
+  });
+  // Empty editable rows up to 50 (only for today)
+  if(isToday){
+    for(let i=saved.length;i<FU_TARGET;i++){
+      rows += `<tr class="fu-row" data-row="${i}">
+        <td class="fu-no">${i+1}</td>
+        <td><input id="fu_c_${i}" placeholder="${t("customer")}" onkeydown="if(event.key==='Enter')saveFollowupRow(${i})"></td>
+        <td><input id="fu_p_${i}" type="tel" style="direction:ltr;text-align:left" placeholder="${t("phone")}" onkeydown="if(event.key==='Enter')saveFollowupRow(${i})"></td>
+        <td><input id="fu_e_${i}" type="email" style="direction:ltr;text-align:left" placeholder="${t("email")}" onkeydown="if(event.key==='Enter')saveFollowupRow(${i})"></td>
+        <td style="text-align:center"><input type="checkbox" id="fu_call_${i}" class="fu-chk"></td>
+        <td style="text-align:center"><input type="checkbox" id="fu_mail_${i}" class="fu-chk"></td>
+        <td><select id="fu_r_${i}">${resOpts("followup")}</select></td>
+        <td><input id="fu_n_${i}" placeholder="${t("followupNote")}" onkeydown="if(event.key==='Enter')saveFollowupRow(${i})"></td>
+        <td style="text-align:center"><button class="fu-add" onclick="saveFollowupRow(${i})" title="${t("save")}">${IC.plus}</button></td>
+      </tr>`;
+    }
+  }
+
+  return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <div><h1 class="page-title">${t("clientFollowup")}</h1><div class="page-sub">${esc(me.name)} — ${fmtDate(selDate)}</div></div>
+    <button class="btn btn-outline btn-sm" onclick="printFollowupReport()">${IC.archive} ${t("printDailyReport")}</button>
+  </div>
+  <div class="grid stats-grid" style="grid-template-columns:repeat(2,1fr)">
+    <div class="stat-card card">
+      <div class="row1"><span class="label">${t("todayFollowups")}</span><span class="stat-ic" style="background:rgba(232,151,30,.1);color:var(--gold)">${IC.trend}</span></div>
+      <div class="num" style="font-size:32px">${todayCount} <span style="font-size:18px;color:var(--muted)">/ ${FU_TARGET}</span></div>
+    </div>
+    <div class="stat-card card">
+      <div class="row1"><span class="label">${t("completion")}</span><span class="stat-ic" style="background:rgba(34,197,94,.1);color:var(--success)">${IC.check}</span></div>
+      <div class="num">${pctToday}%</div>
+      <div class="pbar" style="margin-top:10px;background:rgba(232,151,30,.12)"><i style="width:${pctToday}%;background:var(--gold)"></i></div>
+    </div>
+  </div>
+  <div class="card" style="padding:14px;margin-bottom:16px;display:flex;align-items:end;gap:14px;flex-wrap:wrap">
+    <div style="min-width:210px"><label>${t("filterDate")}</label><input type="date" value="${selDate}" onchange="setFollowupFilterDate(this.value)"></div>
+    ${!isToday?`<div style="color:var(--gold-dark);font-size:13px;font-weight:700;padding-bottom:10px">${t("pastDayReadOnly")}</div>`:""}
+  </div>
+  <div class="card table-wrap fu-wrap">
+    <table class="fu-table">
+      <thead><tr>
+        <th style="width:44px">#</th>
+        <th style="min-width:170px">${t("customer")}</th>
+        <th style="min-width:140px">${t("phone")}</th>
+        <th style="min-width:190px">${t("email")}</th>
+        <th style="width:70px">${t("callDone")}</th>
+        <th style="width:70px">${t("emailSentF")}</th>
+        <th style="min-width:160px">${t("followupResult")}</th>
+        <th style="min-width:190px">${t("followupNote")}</th>
+        <th style="width:60px"></th>
+      </tr></thead>
+      <tbody>${rows||`<tr><td colspan="9"><div class="empty">${t("noFollowups")}</div></td></tr>`}</tbody>
+    </table>
+  </div>`;
+}
+
+window.saveFollowupRow = async function(i){
+  const cust = $(`#fu_c_${i}`)?.value.trim()||"";
+  if(!cust){ toast(t("fillRequired"),"w"); $(`#fu_c_${i}`)?.focus(); return; }
+  const phone = $(`#fu_p_${i}`)?.value.trim()||"";
+  const email = $(`#fu_e_${i}`)?.value.trim()||"";
+  const note  = $(`#fu_n_${i}`)?.value.trim()||"";
+  const call_done = $(`#fu_call_${i}`)?.checked||false;
+  const email_sent = $(`#fu_mail_${i}`)?.checked||false;
+  const result = $(`#fu_r_${i}`)?.value||"followup";
+  const me = empById(session.empId);
+  const btn = document.querySelector(`.fu-row[data-row="${i}"] .fu-add`);
+  if(btn){ btn.disabled=true; btn.style.opacity=".5"; }
+
+  const base={employee_id:session.empId,employee_name:me.name,customer_name:cust,call_done,email_sent};
+  let {data,error} = await sb.from("sales_followups").insert({...base,phone,email,result,note}).select().single();
+  if(error && /column|schema cache/i.test(error.message||"")){
+    let r=await sb.from("sales_followups").insert({...base,phone,email,result}).select().single();
+    if(r.error && /column|schema cache/i.test(r.error.message||"")) r=await sb.from("sales_followups").insert(base).select().single();
+    data=r.data; error=r.error;
+  }
+  if(error){
+    if(btn){ btn.disabled=false; btn.style.opacity="1"; }
+    toast(/row-level security|policy/i.test(error.message||"")?(LANG==="ar"?"صلاحيات الجدول مقفولة في Supabase":"RLS blocked in Supabase"):error.message,"e");
+    return;
+  }
+  FOLLOWUPS_CACHE.unshift(data);
+  toast(t("followupSaved"),"s");
+  renderContent();
+  setTimeout(()=>{ const next=document.querySelector(".fu-row input"); next?.focus(); },80);
+}
+
+window.printFollowupReport = function(){
+  const me = empById(session.empId);
+  const selDate = followupFilterDate || todayStr();
+  const list = FOLLOWUPS_CACHE
+    .filter(f=>f.employee_id===session.empId && f.created_at.slice(0,10)===selDate)
+    .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  if(!list.length){ toast(t("noFollowups"),"w"); return; }
+
+  const stats = {
+    total:list.length,
+    calls:list.filter(f=>f.call_done).length,
+    emails:list.filter(f=>f.email_sent).length,
+    positive:list.filter(f=>f.result==="positive").length,
+    followup:list.filter(f=>f.result==="followup").length,
+    negative:list.filter(f=>f.result==="negative").length,
+    noans:list.filter(f=>f.result==="no_answer").length
+  };
+  const resTxt = r => ({positive:t("fr_positive"),followup:t("fr_followup"),negative:t("fr_negative"),no_answer:t("fr_no_answer")})[r||"followup"];
+  const dateStr = new Date(selDate+"T00:00").toLocaleDateString(LANG==="ar"?"ar-EG":"en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+  const el = $("#printArea");
+  el.innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1B3A5C;padding-bottom:10px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="${LOGO_URL}" style="width:52px;height:52px;object-fit:contain">
+      <div><div style="font-size:19px;font-weight:800;color:#1B3A5C">${esc(SETTINGS.company)}</div>
+      <div style="font-size:11px;color:#666">${esc(SETTINGS.companyAr)}</div></div>
+    </div>
+    <div style="text-align:${LANG==="ar"?"left":"right"}">
+      <div style="font-size:16px;font-weight:800;color:#1B3A5C">${t("dailyFollowupReport")}</div>
+      <div style="font-size:12px;color:#555">${esc(me.name)} — ${esc(me.department)}</div>
+      <div style="font-size:12px;color:#555">${dateStr}</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    ${[[t("totalClients"),stats.total],[t("callDone"),stats.calls],[t("emailSentF"),stats.emails],
+       ["🟢 "+t("fr_positive"),stats.positive],["🟡 "+t("fr_followup"),stats.followup],
+       ["🔴 "+t("fr_negative"),stats.negative],["⚫ "+t("fr_no_answer"),stats.noans]]
+      .map(([k,v])=>`<div style="flex:1;min-width:80px;border:1px solid #ccc;border-radius:7px;padding:7px 6px;text-align:center;background:#FAFAF5">
+        <div style="font-size:17px;font-weight:800;color:#1B3A5C">${v}</div>
+        <div style="font-size:9.5px;color:#666;margin-top:2px">${k}</div></div>`).join("")}
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+    <thead><tr>
+      ${[["#","32px"],[t("customer"),"auto"],[t("phone"),"110px"],[t("email"),"150px"],
+         [t("callDone"),"42px"],[t("emailSentF"),"42px"],[t("followupResult"),"90px"],
+         [t("followupNote"),"auto"],[t("createdAt"),"52px"]]
+        .map(([h,w])=>`<th style="border:1px solid #999;padding:6px 5px;font-size:10.5px;background:#EDEAE0;color:#1B3A5C;text-align:${LANG==="ar"?"right":"left"};width:${w}">${h}</th>`).join("")}
+    </tr></thead>
+    <tbody>
+      ${list.map((f,i)=>`<tr>
+        <td style="border:1px solid #bbb;padding:5px;font-size:10.5px;text-align:center;color:#555">${i+1}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:11px;font-weight:700;word-wrap:break-word">${esc(f.customer_name)}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:10.5px;direction:ltr;text-align:left">${esc(f.phone||"—")}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:9.5px;direction:ltr;text-align:left;word-wrap:break-word">${esc(f.email||"—")}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:11px;text-align:center">${f.call_done?"✔":"—"}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:11px;text-align:center">${f.email_sent?"✔":"—"}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:10px;text-align:center">${resTxt(f.result)}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:10px;color:#444;word-wrap:break-word">${esc(f.note||"—")}</td>
+        <td style="border:1px solid #bbb;padding:5px;font-size:9.5px;text-align:center;color:#666;direction:ltr">${fmtTime(f.created_at)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+
+  <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:12px">
+    <div style="width:190px;border-top:1.5px solid #333;padding-top:5px;text-align:center">${t("employee")}: ${esc(me.name)}</div>
+    <div style="width:190px;border-top:1.5px solid #333;padding-top:5px;text-align:center">${t("supervisor")||"المشرف"}</div>
+  </div>
+  <div style="margin-top:14px;text-align:center;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:6px">
+    ${esc(SETTINGS.company)} — ${new Date().toLocaleString(LANG==="ar"?"ar-EG":"en-GB")}
+  </div>`;
+
+  el.setAttribute("dir", LANG==="ar"?"rtl":"ltr");
+  el.style.fontFamily = "'Tajawal',Arial,sans-serif";
+  toast(t("downloading"),"i");
+  setTimeout(()=>window.print(), 400);
+}
+
 function salesCreateTaskModal(){const opts=EMPLOYEES.filter(e=>e.id!==session.empId).map(e=>`<option value="${e.id}">${esc(e.name)} — ${esc(e.department)}</option>`).join("");openModal(`<h3>${t("salesCreateTask")}<button class="x" onclick="closeModal()">${IC.xmark}</button></h3><div style="display:grid;gap:14px"><label>${t("customer")}</label><input id="sCust"><label>${t("assignTo")}</label><select id="sEmp">${opts}</select><label>${t("description")}</label><textarea id="sDesc" rows="3"></textarea><label>${t("notes")}</label><textarea id="sNotes" rows="2"></textarea><button class="btn btn-primary" onclick="saveSalesTask()">${t("create")}</button></div>`,500)}
 async function saveSalesTask(){const me=empById(session.empId),emp=$("#sEmp").value,target=empById(emp),desc=$("#sDesc").value.trim();if(!desc)return toast(t("fillRequired"),"w");const tid=await nextTaskId(),task={task_id:tid,customer_name:$("#sCust").value.trim()||"—",department:target.department,employee_id:emp,description:desc,quantity:1,priority:"medium",status:"waiting",notes:$("#sNotes").value.trim(),due_date:todayStr(),created_by:me.name};const r=await sb.from("tasks").insert(task);if(r.error)return toast(r.error.message,"e");TASKS.unshift({...task,created_at:nowISO(),archived:false});await sb.from("notifications").insert({emp_id:null,title:t("empCreatedTask").replace("{emp}",me.name).replace("{tid}",tid).replace("{target}",target.name)});closeModal();toast(t("taskCreated"),"s");rerenderCurrent()}
 
@@ -295,9 +490,9 @@ function downloadDailyPdf(){toast(t("downloading"),"i");window.print()}function 
 function netStatus(){const b=$("#offlineBar");if(!navigator.onLine){b.textContent=t("offline")||"Offline";b.classList.add("on")}else b.classList.remove("on")}window.addEventListener("online",netStatus);window.addEventListener("offline",netStatus);
 
 Object.assign(T.ar,{daily:"يومي",monthly:"شهري",dailySalesReport:"تقرير المبيعات اليومي",monthlySalesReport:"تقرير المبيعات الشهري",salesLog:"سجل التقارير",selectDate:"اختار التاريخ",period:"الفترة",open:"فتح",currentReport:"التقرير الحالي",
-  clientFollowup:"متابعة العميل",todayFollowups:"العمليات المضافة اليوم",addFollowup:"إضافة متابعة جديدة",callDone:"تمت مكالمة (كول)",emailSentF:"تم إرسال إيميل",followupSaved:"تم حفظ المتابعة",followupLog:"سجل المتابعات اليومية",filterDate:"تاريخ المتابعة",noFollowups:"لا توجد عمليات متابعة لهذا اليوم",followupResult:"نتيجة المتابعة",fr_positive:"مهتم",fr_followup:"محتاج متابعة لاحقًا",fr_negative:"غير مهتم",fr_no_answer:"لم يرد",followupNote:"ملاحظة",followupNotePlaceholder:"اكتب أي ملاحظة عن العميل أو المكالمة..."});
+  clientFollowup:"متابعة العميل",todayFollowups:"العمليات المضافة اليوم",addFollowup:"إضافة متابعة جديدة",callDone:"تمت مكالمة (كول)",emailSentF:"تم إرسال إيميل",followupSaved:"تم حفظ المتابعة",followupLog:"سجل المتابعات اليومية",filterDate:"تاريخ المتابعة",noFollowups:"لا توجد عمليات متابعة لهذا اليوم",followupResult:"نتيجة المتابعة",fr_positive:"مهتم",fr_followup:"محتاج متابعة لاحقًا",fr_negative:"غير مهتم",fr_no_answer:"لم يرد",followupNote:"ملاحظة",followupNotePlaceholder:"اكتب أي ملاحظة عن العميل أو المكالمة...",printDailyReport:"طباعة التقرير اليومي",dailyFollowupReport:"تقرير متابعة العملاء اليومي",pastDayReadOnly:"عرض فقط — لا يمكن الإضافة في يوم سابق",supervisor:"المشرف"});
 Object.assign(T.en,{daily:"Daily",monthly:"Monthly",dailySalesReport:"Daily Sales Report",monthlySalesReport:"Monthly Sales Report",salesLog:"Reports Log",selectDate:"Select Date",period:"Period",open:"Open",currentReport:"Current Report",
-  clientFollowup:"Client Follow-up",todayFollowups:"Today's Follow-ups",addFollowup:"Add New Follow-up",callDone:"Call Done",emailSentF:"Email Sent",followupSaved:"Follow-up saved",followupLog:"Daily Follow-ups Log",filterDate:"Follow-up Date",noFollowups:"No follow-ups for this day",followupResult:"Follow-up Result",fr_positive:"Positive",fr_followup:"Follow Up",fr_negative:"Negative",fr_no_answer:"No Answer",followupNote:"Note",followupNotePlaceholder:"Write any note about the client or the call..."});
+  clientFollowup:"Client Follow-up",todayFollowups:"Today's Follow-ups",addFollowup:"Add New Follow-up",callDone:"Call Done",emailSentF:"Email Sent",followupSaved:"Follow-up saved",followupLog:"Daily Follow-ups Log",filterDate:"Follow-up Date",noFollowups:"No follow-ups for this day",followupResult:"Follow-up Result",fr_positive:"Positive",fr_followup:"Follow Up",fr_negative:"Negative",fr_no_answer:"No Answer",followupNote:"Note",followupNotePlaceholder:"Write any note about the client or the call...",printDailyReport:"Print Daily Report",dailyFollowupReport:"Daily Client Follow-up Report",pastDayReadOnly:"View only — cannot add on a past day",supervisor:"Supervisor"});
 
 function getSalesRange(mode=salesPeriodMode,date=salesPeriodDate){
   const d=new Date(date||todayStr());
