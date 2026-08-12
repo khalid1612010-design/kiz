@@ -96,7 +96,31 @@ const I18N = {
     hintRls:"الاتصال ناجح لكن الجدول رجع فارغًا — غالبًا RLS مفعّل بدون سياسة، أو الجدول لا يحتوي بيانات",
     okSaved:"تم الحفظ بنجاح", okUpdated:"تم التحديث بنجاح", okDeleted:"تم الحذف",
     backOnline:"عاد الاتصال بالإنترنت", offline:"أنت غير متصل بالإنترنت",
-    nothingToPrint:"لا توجد بيانات للطباعة"
+    nothingToPrint:"لا توجد بيانات للطباعة",
+
+    /* ---- Excel import ---- */
+    importExcel:"استيراد من Excel", importTitle:"استيراد بيانات العملاء من Excel",
+    chooseFile:"اختيار ملف Excel", checkFile:"فحص الملف", confirmImport:"تأكيد الاستيراد",
+    importValidOnly:"استيراد السجلات الصحيحة", importing:"جاري الاستيراد...",
+    readingFile:"جاري قراءة الملف...", noFileChosen:"لم يتم اختيار ملف",
+    importHint:"اختر ملف Excel يحتوي على أعمدة: اسم الشركة، الهاتف، البريد الإلكتروني، الحالة، الملاحظة",
+    supportedCols:"الأعمدة المدعومة", colOrderFree:"ترتيب الأعمدة غير مهم — النظام يتعرف على الأعمدة من أسمائها",
+    rowsFound:"سجلات تم العثور عليها", rowsValid:"سجلات صحيحة", rowsInvalid:"سجلات بها أخطاء",
+    rowsDuplicate:"سجلات مكررة", rowNo:"الصف", errorsList:"الأخطاء المكتشفة",
+    company:"الشركة", statusCol:"الحالة", noteCol:"الملاحظة",
+    duplicateWarn:"موجود مسبقًا اليوم",
+    errFileType:"صيغة الملف غير مدعومة — استخدم ملف .xlsx أو .xls",
+    errFileEmpty:"الملف فارغ أو لا يحتوي على بيانات",
+    errFileRead:"تعذّر قراءة الملف — تأكد أنه ملف Excel صالح",
+    errMissingCol:"لم يتم العثور على عمود مطلوب",
+    errRowName:"اسم الشركة مطلوب", errRowPhone:"رقم الهاتف غير صالح",
+    errRowEmail:"البريد الإلكتروني غير صالح",
+    errLimitExceeded:"تجاوز الحد اليومي المسموح",
+    limitInfo:"الحد اليومي", limitRemaining:"المتبقي اليوم",
+    willImport:"سيتم استيراد", importDone:"تم استيراد {n} عميل بنجاح",
+    importPartial:"تم استيراد {ok} عميل — فشل {fail}",
+    noValidRows:"لا توجد سجلات صحيحة للاستيراد",
+    libMissing:"مكتبة قراءة Excel غير محمّلة — حدّث الصفحة"
   },
   en:{
     dir:"ltr", locale:"en-GB",
@@ -158,7 +182,31 @@ const I18N = {
     hintRls:"Connected but the table returned 0 rows — RLS is likely enabled without a policy, or the table is empty",
     okSaved:"Saved successfully", okUpdated:"Updated successfully", okDeleted:"Deleted",
     backOnline:"Back online", offline:"You are offline",
-    nothingToPrint:"Nothing to print"
+    nothingToPrint:"Nothing to print",
+
+    /* ---- Excel import ---- */
+    importExcel:"Import from Excel", importTitle:"Import Customers from Excel",
+    chooseFile:"Choose Excel file", checkFile:"Check File", confirmImport:"Confirm Import",
+    importValidOnly:"Import valid rows", importing:"Importing...",
+    readingFile:"Reading file...", noFileChosen:"No file selected",
+    importHint:"Choose an Excel file containing: Company Name, Phone, Email, Status, Note",
+    supportedCols:"Supported columns", colOrderFree:"Column order does not matter — columns are detected by their header names",
+    rowsFound:"Rows found", rowsValid:"Valid rows", rowsInvalid:"Rows with errors",
+    rowsDuplicate:"Possible duplicates", rowNo:"Row", errorsList:"Detected errors",
+    company:"Company", statusCol:"Status", noteCol:"Note",
+    duplicateWarn:"Already added today",
+    errFileType:"Unsupported file type — use .xlsx or .xls",
+    errFileEmpty:"The file is empty or has no data rows",
+    errFileRead:"Could not read the file — make sure it is a valid Excel file",
+    errMissingCol:"A required column was not found",
+    errRowName:"Company name is required", errRowPhone:"Invalid phone number",
+    errRowEmail:"Invalid email address",
+    errLimitExceeded:"Daily limit exceeded",
+    limitInfo:"Daily limit", limitRemaining:"Remaining today",
+    willImport:"Will import", importDone:"{n} customers imported successfully",
+    importPartial:"{ok} imported — {fail} failed",
+    noValidRows:"No valid rows to import",
+    libMissing:"Excel library not loaded — please refresh the page"
   }
 };
 
@@ -179,6 +227,7 @@ const State = {
   employees : [],     // all employees (admin) / public list (login)
   levels    : [],     // customer_levels rows
   lastError : null,   // last data-layer error message (shown on setup screen)
+  todayCount: 0,      // customers added today by the logged-in sales employee
   view      : "dashboard",
   authStep  : "role", // role | salesPick | salesPass | adminLogin
   pickedEmp : null,
@@ -286,7 +335,9 @@ const IC = {
   menu:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg>',
   trend:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   target:'<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
-  back:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  back:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  upload:'<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v13" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 };
 
 /* =========================================================
@@ -749,6 +800,7 @@ async function viewSalesDashboard(){
   const rows = await Data.customers({ employeeIds:[me.id], from:date, to:date });
   const s    = Stats.summary(rows);
   const isToday = date === todayKey();
+  if(isToday) State.todayCount = rows.length;   // used by the Excel import limit check
   const done = s.total, target = CONFIG.DAILY_TARGET;
   const percent = pct(done, target);
   const ringPct = Math.min(100, percent);
@@ -763,6 +815,7 @@ async function viewSalesDashboard(){
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="printSalesDay()">${IC.print} ${t("printReport")}</button>
+      ${isToday ? `<button class="btn btn-navy btn-sm" onclick="openImportModal()">${IC.upload} ${t("importExcel")}</button>` : ""}
       ${isToday ? `<button class="btn btn-primary" onclick="openCustomerModal()">${IC.plus} ${t("addCustomer")}</button>` : ""}
     </div>
   </div>
@@ -1530,6 +1583,289 @@ window.printSalesDay = async () => {
     rows: rows.slice().reverse(),
     showEmployee: false
   });
+};
+
+/* =========================================================
+ * 18.5) EXCEL IMPORT  (isolated module — no existing logic touched)
+ * ======================================================= */
+
+/** Accepted header names per field. Add more aliases here any time. */
+const COLUMN_MAP = {
+  customer_name: ["اسم الشركة","الشركة","اسم العميل","العميل","اسم","company","company name","customer","customer name","name","client"],
+  phone        : ["الهاتف","رقم الهاتف","رقم","التليفون","الموبايل","موبايل","phone","phone number","mobile","tel","telephone","number"],
+  email        : ["الإيميل","الايميل","البريد الإلكتروني","البريد الالكتروني","البريد","ايميل","email","e-mail","mail","email address"],
+  status       : ["الحالة","نتيجة التواصل","النتيجة","نتيجة المتابعة","حالة","status","result","follow up","follow-up","follow up result","outcome"],
+  note         : ["الملاحظة","ملاحظات","ملاحظة","التعليق","notes","note","comment","comments","remark","remarks"]
+};
+
+/** Free-text status → system value */
+const STATUS_MAP = {
+  positive : ["مهتم","مهتمة","موافق","نعم","ايجابي","إيجابي","positive","interested","yes","ok","good"],
+  follow_up: ["متابعة","محتاج متابعة","متابعة لاحقا","متابعة لاحقًا","لاحقا","لاحقًا","follow up","follow-up","followup","later","callback","call back","pending"],
+  negative : ["غير مهتم","غير مهتمة","رفض","مرفوض","لا","سلبي","negative","not interested","no","rejected","declined"],
+  no_answer: ["لم يرد","لا يرد","مردش","مش بيرد","بدون رد","no answer","noanswer","not answered","unreachable","busy"]
+};
+
+/** Import session state (kept out of the global App State on purpose) */
+const Imp = { file:null, rows:[], missing:[], busy:false };
+
+const normHeader = s => String(s ?? "")
+  .replace(/[\u064B-\u065F\u0670]/g,"")      // strip Arabic diacritics
+  .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
+  .replace(/[_\-.]/g," ").replace(/\s+/g," ")
+  .trim().toLowerCase();
+
+const normStatus = s => normHeader(s);
+
+/** Detect which spreadsheet column belongs to which system field */
+function detectColumns(headers){
+  const map = {};
+  const norm = headers.map(normHeader);
+  for(const [field, aliases] of Object.entries(COLUMN_MAP)){
+    const wanted = aliases.map(normHeader);
+    let idx = norm.findIndex(h => h && wanted.includes(h));
+    if(idx === -1) idx = norm.findIndex(h => h && wanted.some(w => h.includes(w) || w.includes(h)));
+    if(idx !== -1) map[field] = idx;
+  }
+  return map;
+}
+
+/** Map free text to one of the 4 system results (defaults to follow_up) */
+function mapStatus(raw){
+  const v = normStatus(raw);
+  if(!v) return "follow_up";
+  for(const [key, aliases] of Object.entries(STATUS_MAP)){
+    if(aliases.map(normStatus).some(a => v === a || v.includes(a) || a.includes(v))) return key;
+  }
+  return "follow_up";
+}
+
+window.openImportModal = () => {
+  Imp.file = null; Imp.rows = []; Imp.missing = []; Imp.busy = false;
+  renderImportModal();
+};
+
+function renderImportModal(){
+  const aliasLine = f => COLUMN_MAP[f].slice(0,4).join(" • ");
+  openModal(`
+    <h3>${IC.upload} ${t("importTitle")}
+      <button class="x" onclick="closeModal()">${IC.x}</button></h3>
+
+    <div class="imp-drop" id="impDrop">
+      <input type="file" id="impFile" accept=".xlsx,.xls" hidden onchange="onImportFile(this)">
+      <button class="btn btn-outline" onclick="document.getElementById('impFile').click()">
+        ${IC.upload} ${t("chooseFile")}</button>
+      <div class="imp-name" id="impName">${t("noFileChosen")}</div>
+      <div class="imp-hint">${t("importHint")}</div>
+    </div>
+
+    <details class="imp-cols">
+      <summary>${t("supportedCols")}</summary>
+      <div class="imp-cols-body">
+        <div><b>${t("customerName")}:</b> ${esc(aliasLine("customer_name"))}</div>
+        <div><b>${t("phone")}:</b> ${esc(aliasLine("phone"))}</div>
+        <div><b>${t("emailAddr")}:</b> ${esc(aliasLine("email"))}</div>
+        <div><b>${t("statusCol")}:</b> ${esc(aliasLine("status"))}</div>
+        <div><b>${t("noteCol")}:</b> ${esc(aliasLine("note"))}</div>
+        <div class="imp-note">${t("colOrderFree")}</div>
+      </div>
+    </details>
+
+    <div id="impBody"></div>
+
+    <div class="modal-foot" id="impFoot">
+      <button class="btn btn-outline" onclick="closeModal()">${t("cancel")}</button>
+    </div>`, 900);
+}
+
+window.onImportFile = async (input) => {
+  const file = input.files && input.files[0];
+  if(!file) return;
+  if(!/\.(xlsx|xls)$/i.test(file.name)){ toast(t("errFileType"), "e"); input.value = ""; return; }
+  if(typeof XLSX === "undefined"){ toast(t("libMissing"), "e"); return; }
+
+  Imp.file = file;
+  $("#impName").textContent = file.name;
+  $("#impBody").innerHTML = `<div class="imp-loading"><span class="spin" style="border-color:rgba(27,58,92,.2);border-top-color:var(--gold)"></span> ${t("readingFile")}</div>`;
+
+  try{
+    const buf = await file.arrayBuffer();
+    const wb  = XLSX.read(buf, { type:"array" });
+    const ws  = wb.Sheets[wb.SheetNames[0]];
+    if(!ws) throw new Error("empty");
+
+    const grid = XLSX.utils.sheet_to_json(ws, { header:1, defval:"", blankrows:false, raw:false });
+    if(!grid.length) throw new Error("empty");
+
+    // First non-empty line is the header row
+    const headerIdx = grid.findIndex(r => r.some(c => String(c).trim() !== ""));
+    if(headerIdx === -1) throw new Error("empty");
+
+    const headers = grid[headerIdx].map(h => String(h).trim());
+    const cols    = detectColumns(headers);
+
+    // Required columns
+    Imp.missing = ["customer_name","phone"].filter(f => cols[f] === undefined);
+    if(Imp.missing.length){ Imp.rows = []; renderImportBody(); return; }
+
+    const cell = (row, f) => cols[f] === undefined ? "" : String(row[cols[f]] ?? "").trim();
+    const todayRows = await Data.customers({
+      employeeIds:[State.profile.id], from:todayKey(), to:todayKey()
+    });
+    const seenPhone = new Set(todayRows.map(r => String(r.phone||"").replace(/\D/g,"")));
+    const seenName  = new Set(todayRows.map(r => String(r.customer_name||"").trim().toLowerCase()));
+    const inFile    = new Set();
+
+    Imp.rows = grid.slice(headerIdx + 1)
+      .filter(r => r.some(c => String(c).trim() !== ""))          // drop blank lines
+      .map((r, i) => {
+        const name  = cell(r,"customer_name");
+        const phone = cell(r,"phone");
+        const email = cell(r,"email");
+        const note  = cell(r,"note");
+        const status= mapStatus(cell(r,"status"));
+
+        const errors = [];
+        if(!name)                       errors.push(t("errRowName"));
+        if(!phone || !isPhone(phone))   errors.push(t("errRowPhone"));
+        if(email && !isEmail(email))    errors.push(t("errRowEmail"));
+
+        const digits = phone.replace(/\D/g,"");
+        const key    = digits || name.toLowerCase();
+        const dup    = (digits && seenPhone.has(digits)) ||
+                       (!digits && seenName.has(name.toLowerCase())) ||
+                       inFile.has(key);
+        if(key) inFile.add(key);
+
+        return { line:headerIdx + 2 + i, name, phone, email, note, status,
+                 errors, dup, valid:errors.length === 0 };
+      });
+
+    if(!Imp.rows.length) throw new Error("empty");
+    renderImportBody();
+  }catch(err){
+    console.error("[import]", err);
+    Imp.rows = []; Imp.missing = [];
+    $("#impBody").innerHTML =
+      `<div class="imp-error">${IC.warn} ${err.message === "empty" ? t("errFileEmpty") : t("errFileRead")}</div>`;
+    $("#impFoot").innerHTML = `<button class="btn btn-outline" onclick="closeModal()">${t("cancel")}</button>`;
+  }
+};
+
+function renderImportBody(){
+  const body = $("#impBody"), foot = $("#impFoot");
+
+  if(Imp.missing.length){
+    const labels = { customer_name:t("customerName"), phone:t("phone") };
+    body.innerHTML = `<div class="imp-error">${IC.warn}
+      <div><b>${t("errMissingCol")}</b>
+      <div style="margin-top:6px">${Imp.missing.map(f => `• ${esc(labels[f])}`).join("<br>")}</div></div></div>`;
+    foot.innerHTML = `<button class="btn btn-outline" onclick="closeModal()">${t("cancel")}</button>`;
+    return;
+  }
+
+  const total   = Imp.rows.length;
+  const invalid = Imp.rows.filter(r => !r.valid).length;
+  const dups    = Imp.rows.filter(r => r.valid && r.dup).length;
+  const importable = Imp.rows.filter(r => r.valid && !r.dup);
+
+  // Respect the existing daily limit — never change the rule, just warn
+  const usedToday = State.todayCount || 0;
+  const remaining = Math.max(0, CONFIG.DAILY_TARGET - usedToday);
+  const willImport = Math.min(importable.length, remaining);
+  const overLimit  = importable.length > remaining;
+
+  const statusChip = s => `<span class="badge b-${s}">${resultEmoji(s)} ${esc(resultLabel(s))}</span>`;
+
+  body.innerHTML = `
+    <div class="imp-stats">
+      <div class="imp-stat"><b>${total}</b><span>${t("rowsFound")}</span></div>
+      <div class="imp-stat ok"><b>${total - invalid}</b><span>${t("rowsValid")}</span></div>
+      <div class="imp-stat ${invalid?"bad":""}"><b>${invalid}</b><span>${t("rowsInvalid")}</span></div>
+      <div class="imp-stat ${dups?"warn":""}"><b>${dups}</b><span>${t("rowsDuplicate")}</span></div>
+      <div class="imp-stat"><b>${remaining}</b><span>${t("limitRemaining")}</span></div>
+    </div>
+
+    ${overLimit ? `<div class="imp-error" style="margin-bottom:12px">${IC.warn}
+      <div>${t("errLimitExceeded")} — ${t("limitInfo")}: ${CONFIG.DAILY_TARGET} • ${t("willImport")}: <b>${willImport}</b></div></div>` : ""}
+
+    <div class="imp-table-wrap">
+      <table class="imp-table">
+        <thead><tr>
+          <th style="width:44px">${t("rowNo")}</th>
+          <th>${t("company")}</th><th>${t("phone")}</th><th>${t("emailAddr")}</th>
+          <th>${t("statusCol")}</th><th>${t("noteCol")}</th><th style="width:34px"></th>
+        </tr></thead>
+        <tbody>
+          ${Imp.rows.map(r => `
+            <tr class="${!r.valid ? "row-bad" : r.dup ? "row-dup" : ""}">
+              <td class="row-no">${r.line}</td>
+              <td>${r.name ? `<b>${esc(r.name)}</b>` : `<i class="imp-missing">—</i>`}</td>
+              <td class="ltr">${r.phone ? esc(r.phone) : `<i class="imp-missing">—</i>`}</td>
+              <td class="ltr" style="font-size:12.5px">${r.email ? esc(r.email) : "—"}</td>
+              <td>${statusChip(r.status)}</td>
+              <td style="max-width:180px;font-size:12.5px;color:var(--muted)">${esc(r.note || "—")}</td>
+              <td style="text-align:center">${
+                !r.valid ? `<span class="imp-flag bad" title="${esc(r.errors.join(" • "))}">✕</span>`
+                : r.dup  ? `<span class="imp-flag warn" title="${t("duplicateWarn")}">!</span>`
+                :          `<span class="imp-flag ok">✓</span>`}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    ${invalid ? `<div class="imp-errors">
+      <b>${t("errorsList")} (${invalid})</b>
+      <ul>${Imp.rows.filter(r => !r.valid).map(r =>
+        `<li><span>${t("rowNo")} ${r.line}:</span> ${esc(r.errors.join(" • "))}</li>`).join("")}</ul>
+    </div>` : ""}`;
+
+  foot.innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal()">${t("cancel")}</button>
+    <button class="btn btn-primary" id="impGo" ${willImport ? "" : "disabled"} onclick="runImport()">
+      ${IC.check} ${invalid || dups ? t("importValidOnly") : t("confirmImport")} (${willImport})
+    </button>`;
+}
+
+window.runImport = async () => {
+  if(Imp.busy) return;
+  const usedToday = State.todayCount || 0;
+  const remaining = Math.max(0, CONFIG.DAILY_TARGET - usedToday);
+  const queue = Imp.rows.filter(r => r.valid && !r.dup).slice(0, remaining);
+  if(!queue.length){ toast(t("noValidRows"), "w"); return; }
+
+  Imp.busy = true;
+  const btn = $("#impGo");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spin"></span> ${t("importing")} 0/${queue.length}`;
+
+  let ok = 0, fail = 0;
+  for(let i = 0; i < queue.length; i++){
+    const r = queue[i];
+    try{
+      // Uses the SAME save path as manual entry
+      await Data.insertCustomer({
+        customer_name    : r.name,
+        phone            : r.phone,
+        email            : r.email || null,
+        email_sent       : false,
+        call_completed   : false,
+        follow_up_result : r.status,
+        customer_level   : null,
+        notes            : r.note || "",
+        employee_id      : State.profile.id
+      });
+      ok++;
+    }catch(err){ console.error("[import row]", r.line, err); fail++; }
+    btn.innerHTML = `<span class="spin"></span> ${t("importing")} ${i+1}/${queue.length}`;
+  }
+
+  Imp.busy = false;
+  closeModal();
+  toast(fail ? t("importPartial").replace("{ok}", ok).replace("{fail}", fail)
+             : t("importDone").replace("{n}", ok),
+        fail ? "w" : "s");
+  renderContent();
 };
 
 /* =========================================================
