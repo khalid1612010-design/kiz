@@ -120,7 +120,23 @@ const I18N = {
     willImport:"سيتم استيراد", importDone:"تم استيراد {n} عميل بنجاح",
     importPartial:"تم استيراد {ok} عميل — فشل {fail}",
     noValidRows:"لا توجد سجلات صحيحة للاستيراد",
-    libMissing:"مكتبة قراءة Excel غير محمّلة — حدّث الصفحة"
+    libMissing:"مكتبة قراءة Excel غير محمّلة — حدّث الصفحة",
+
+    /* ---- Excel export ---- */
+    exportExcel:"تحميل التقرير Excel", preparingFile:"جاري تجهيز التقرير...",
+    exportDone:"تم تحميل التقرير بنجاح", exportFail:"حدث خطأ أثناء تحميل التقرير، حاول مرة أخرى",
+    sheetCustomers:"العملاء", sheetSummary:"الملخص", metric:"البند", value:"القيمة",
+
+    /* ---- Employee management ---- */
+    manageEmployees:"إدارة الموظفين", addEmployee:"إضافة موظف", editEmployee:"تعديل بيانات الموظف",
+    nameAr:"الاسم بالعربية", nameEn:"الاسم بالإنجليزية", roleLbl:"الصلاحية",
+    roleSales:"موظف مبيعات", roleAdmin:"إدارة", statusActive:"الحالة",
+    activeYes:"نشط", activeNo:"غير نشط",
+    empSaved:"تم حفظ بيانات الموظف", empUpdated:"تم تحديث بيانات الموظف",
+    empDeleted:"تم حذف الموظف",
+    confirmDeleteEmp:"سيتم حذف الموظف وجميع عملائه نهائيًا. هل أنت متأكد؟",
+    errNameRequired:"الاسم مطلوب", cannotDeleteSelf:"لا يمكنك حذف حسابك الحالي",
+    noEmployees:"لا يوجد موظفون"
   },
   en:{
     dir:"ltr", locale:"en-GB",
@@ -206,7 +222,23 @@ const I18N = {
     willImport:"Will import", importDone:"{n} customers imported successfully",
     importPartial:"{ok} imported — {fail} failed",
     noValidRows:"No valid rows to import",
-    libMissing:"Excel library not loaded — please refresh the page"
+    libMissing:"Excel library not loaded — please refresh the page",
+
+    /* ---- Excel export ---- */
+    exportExcel:"Download Excel Report", preparingFile:"Preparing report...",
+    exportDone:"Report downloaded successfully", exportFail:"Could not download the report, please try again",
+    sheetCustomers:"Customers", sheetSummary:"Summary", metric:"Metric", value:"Value",
+
+    /* ---- Employee management ---- */
+    manageEmployees:"Manage Employees", addEmployee:"Add Employee", editEmployee:"Edit Employee",
+    nameAr:"Name (Arabic)", nameEn:"Name (English)", roleLbl:"Role",
+    roleSales:"Sales", roleAdmin:"Admin", statusActive:"Status",
+    activeYes:"Active", activeNo:"Inactive",
+    empSaved:"Employee saved", empUpdated:"Employee updated",
+    empDeleted:"Employee deleted",
+    confirmDeleteEmp:"This will permanently delete the employee and all their customers. Continue?",
+    errNameRequired:"Name is required", cannotDeleteSelf:"You cannot delete your own account",
+    noEmployees:"No employees"
   }
 };
 
@@ -337,7 +369,9 @@ const IC = {
   target:'<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
   back:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   upload:'<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v13" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  warn:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  warn:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  sheet:'<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke-linecap="round"/></svg>',
+  download:'<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 };
 
 /* =========================================================
@@ -464,6 +498,22 @@ const Data = {
   },
   async deleteCustomer(id){
     const { error } = await sb.from("customers").delete().eq("id", id);
+    if(error) throw error;
+  },
+
+  /* ---- Employee management (admin only, enforced in the UI router) ---- */
+  async insertEmployee(payload){
+    const { data, error } = await sb.from("employees").insert(payload).select().single();
+    if(error) throw error;
+    return data;
+  },
+  async updateEmployee(id, payload){
+    const { data, error } = await sb.from("employees").update(payload).eq("id", id).select().single();
+    if(error) throw error;
+    return data;
+  },
+  async deleteEmployee(id){
+    const { error } = await sb.from("employees").delete().eq("id", id);
     if(error) throw error;
   }
 };
@@ -814,7 +864,7 @@ async function viewSalesDashboard(){
       <div class="page-sub">${fmtDateLong(date)}</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" onclick="printSalesDay()">${IC.print} ${t("printReport")}</button>
+      <button class="btn btn-outline btn-sm" onclick="exportSalesDay(event)">${IC.sheet} ${t("exportExcel")}</button>
       ${isToday ? `<button class="btn btn-navy btn-sm" onclick="openImportModal()">${IC.upload} ${t("importExcel")}</button>` : ""}
       ${isToday ? `<button class="btn btn-primary" onclick="openCustomerModal()">${IC.plus} ${t("addCustomer")}</button>` : ""}
     </div>
@@ -926,6 +976,7 @@ async function viewSalesLevels(){
   <div class="page-head">
     <div><h1 class="page-title">${t("customerLevels")}</h1>
     <div class="page-sub">${esc(empName(State.profile))}</div></div>
+    <button class="btn btn-outline btn-sm" onclick="exportSalesLevels(event)">${IC.sheet} ${t("exportExcel")}</button>
   </div>
 
   <div class="grid g4" style="margin-bottom:8px">
@@ -1212,27 +1263,40 @@ async function viewAdminEmployees(){
   const rowsAll   = await Data.customers({});
   const byToday   = Stats.byEmployee(rowsToday);
   const byAll     = Stats.byEmployee(rowsAll);
-  const sales     = State.employees.filter(e => e.role === "sales");
+  const all       = State.employees;   // admin manages every employee
 
   return `
-  <div class="page-head"><div>
-    <h1 class="page-title">${t("employees")}</h1>
-    <div class="page-sub">${fmtDateLong(today)}</div></div></div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">${t("employees")}</h1>
+      <div class="page-sub">${fmtDateLong(today)}</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openEmployeeModal()">${IC.plus} ${t("addEmployee")}</button>
+  </div>
 
   <div class="grid g3">
-    ${sales.length ? sales.map((e,i) => {
-      const dt = byToday[e.id] || 0, all = byAll[e.id] || 0, p = pct(dt, CONFIG.DAILY_TARGET);
-      return `<div class="emp-card" style="animation-delay:${i*60}ms" onclick="openEmployee('${e.id}')">
-        <div class="emp-top">
+    ${all.length ? all.map((e,i) => {
+      const dt = byToday[e.id] || 0, tot = byAll[e.id] || 0, p = pct(dt, CONFIG.DAILY_TARGET);
+      const isSales = e.role === "sales";
+      return `<div class="emp-card" style="animation-delay:${i*60}ms">
+        <div class="emp-top" ${isSales ? `onclick="openEmployee('${e.id}')" style="cursor:pointer"` : ""}>
           <div class="avatar">${esc(empName(e)[0]||"?")}</div>
-          <div><b>${esc(empName(e))}</b><span>${t("sales")}</span></div>
+          <div style="flex:1">
+            <b>${esc(empName(e))}</b>
+            <span>${e.role === "admin" ? t("roleAdmin") : t("roleSales")}${e.active === false ? " • " + t("activeNo") : ""}</span>
+          </div>
         </div>
-        <div class="mini-row"><span>${t("customersToday")}</span><b>${dt} / ${CONFIG.DAILY_TARGET}</b></div>
-        <div class="pbar" style="margin-bottom:12px"><i style="width:${Math.min(100,p)}%"></i></div>
-        <div class="mini-row"><span>${t("totalCustomers")}</span><b>${all}</b></div>
-        <button class="btn btn-outline btn-sm btn-block" style="margin-top:12px">${t("viewDetails")}</button>
+        ${isSales ? `
+          <div class="mini-row"><span>${t("customersToday")}</span><b>${dt} / ${CONFIG.DAILY_TARGET}</b></div>
+          <div class="pbar" style="margin-bottom:12px"><i style="width:${Math.min(100,p)}%"></i></div>
+          <div class="mini-row"><span>${t("totalCustomers")}</span><b>${tot}</b></div>` : ""}
+        <div class="emp-actions">
+          ${isSales ? `<button class="btn btn-outline btn-sm" onclick="openEmployee('${e.id}')">${t("viewDetails")}</button>` : ""}
+          <button class="act" title="${t("edit")}" onclick="openEmployeeModal('${e.id}')">${IC.edit}</button>
+          <button class="act danger" title="${t("delete")}" onclick="removeEmployee('${e.id}')">${IC.trash}</button>
+        </div>
       </div>`;
-    }).join("") : `<div class="card"><div class="empty">${t("noData")}</div></div>`}
+    }).join("") : `<div class="card"><div class="empty">${t("noEmployees")}</div></div>`}
   </div>`;
 }
 window.openEmployee = id => { State.adminEmpId = id; renderContent(); window.scrollTo({top:0}); };
@@ -1261,6 +1325,7 @@ async function viewEmployeeDetail(empId){
       <div><h1 class="page-title" style="font-size:24px">${esc(empName(e))}</h1>
       <div class="page-sub" style="margin:0">${t("sales")}</div></div>
     </div>
+    <button class="btn btn-navy btn-sm" onclick="exportEmployee(event,'${e.id}')">${IC.sheet} ${t("exportExcel")}</button>
   </div>
 
   <div class="grid g4" style="margin-bottom:18px">
@@ -1342,10 +1407,13 @@ async function viewAdminCustomers(){
   const { from, to } = rangeToDates(State.adminRange);
   const rows = await Data.customers({ from, to });
   return `
-  <div class="page-head"><div>
-    <h1 class="page-title">${t("customers")}</h1>
-    <div class="page-sub">${from ? fmtDate(from)+" → "+fmtDate(to) : t("allTime")} — ${rows.length}</div>
-  </div></div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">${t("customers")}</h1>
+      <div class="page-sub">${from ? fmtDate(from)+" → "+fmtDate(to) : t("allTime")} — ${rows.length}</div>
+    </div>
+    <button class="btn btn-navy btn-sm" onclick="exportAdminCustomers(event)">${IC.sheet} ${t("exportExcel")}</button>
+  </div>
 
   <div class="chips" style="margin-bottom:18px">
     ${[["today","today"],["yesterday","yesterday"],["week","thisWeek"],["month","thisMonth"],["all","allTime"]]
@@ -1387,7 +1455,7 @@ async function viewAdminReports(){
       <div class="page-head" style="margin-top:26px">
         <div><h2 class="section-title" style="font-size:19px;margin:0">${t("reportTitle")}</h2>
         <div class="page-sub" style="margin:4px 0 0">${reportPeriodText()} — ${R.rows.length}</div></div>
-        <button class="btn btn-navy" onclick="printReport()">${IC.print} ${t("printReport")}</button>
+        <button class="btn btn-navy" onclick="exportReport(event)">${IC.sheet} ${t("exportExcel")}</button>
       </div>
       <div class="grid g4" style="margin-bottom:16px">
         ${statCard("totalCustomers", s.total,    IC.users, "#1B3A5C")}
@@ -1866,6 +1934,374 @@ window.runImport = async () => {
              : t("importDone").replace("{n}", ok),
         fail ? "w" : "s");
   renderContent();
+};
+
+/* =========================================================
+ * 18.6) EXCEL EXPORT  (isolated module)
+ * Uses the SAME data + filters + permissions as the on-screen report.
+ * Never writes to Supabase — read-only.
+ * ======================================================= */
+
+/** Build the rows array shown in a report table, as plain objects for Excel. */
+function customersToSheet(rows, { showEmployee }){
+  const H = {
+    no      : "#",
+    name    : t("customerName"),
+    emp     : t("employee"),
+    phone   : t("phone"),
+    email   : t("emailAddr"),
+    mail    : t("emailMessage"),
+    call    : t("callStatus"),
+    result  : t("followUpResult"),
+    level   : t("level"),
+    notes   : t("notes"),
+    date    : t("date"),
+    time    : t("createdAt")
+  };
+  const yes = t("activeYes") === "Active" ? "Yes" : "نعم";
+  const no  = t("activeYes") === "Active" ? "No"  : "لا";
+
+  return rows.map((r, i) => {
+    const o = {};
+    o[H.no]   = i + 1;
+    o[H.name] = r.customer_name || "";
+    if(showEmployee) o[H.emp] = empName(State.employees.find(e => e.id === r.employee_id));
+    o[H.phone]  = r.phone || "";
+    o[H.email]  = r.email || "";
+    o[H.mail]   = r.email_sent      ? yes : no;
+    o[H.call]   = r.call_completed  ? yes : no;
+    o[H.result] = resultLabel(r.follow_up_result);
+    o[H.level]  = levelName(r.customer_level) || t("notSet");
+    o[H.notes]  = r.notes || "";
+    o[H.date]   = fmtDate(r.created_at);
+    o[H.time]   = fmtTime(r.created_at);
+    return o;
+  });
+}
+
+/** Summary sheet (same numbers as the stat cards on screen). */
+function summaryToSheet(rows, metaLines){
+  const s = Stats.summary(rows);
+  const out = metaLines.map(([k, v]) => ({ [t("metric")]: k, [t("value")]: v }));
+  out.push({ [t("metric")]: "", [t("value")]: "" });
+  [
+    [t("totalCustomers"), s.total],
+    [t("emailsSent"),     s.emails],
+    [t("callsMade"),      s.calls],
+    [t("interested"),     s.positive],
+    [t("needFollowUp"),   s.follow_up],
+    [t("notInterested"),  s.negative],
+    [t("noAnswer"),       s.no_answer]
+  ].forEach(([k, v]) => out.push({ [t("metric")]: k, [t("value")]: v }));
+
+  // level breakdown
+  const byLv = Stats.byLevel(rows);
+  out.push({ [t("metric")]: "", [t("value")]: "" });
+  State.levels.forEach(l => out.push({
+    [t("metric")]: (LANG === "ar" ? l.name_ar : l.name_en), [t("value")]: byLv[l.key] || 0
+  }));
+  out.push({ [t("metric")]: t("notSet"), [t("value")]: byLv.__none__ || 0 });
+  return out;
+}
+
+/** Auto column widths so the file is readable straight away. */
+function autoWidths(json){
+  if(!json.length) return [];
+  return Object.keys(json[0]).map(k => {
+    const len = Math.max(String(k).length, ...json.map(r => String(r[k] ?? "").length));
+    return { wch: Math.min(42, Math.max(10, len + 2)) };
+  });
+}
+
+/**
+ * Generate and download an .xlsx file.
+ * @param {Array} rows        customer rows (already filtered & permitted)
+ * @param {Object} opts       { fileName, metaLines, showEmployee }
+ */
+function downloadExcel(rows, { fileName, metaLines = [], showEmployee = false }){
+  if(typeof XLSX === "undefined") throw new Error("lib");
+  const wb = XLSX.utils.book_new();
+
+  const wsData = XLSX.utils.json_to_sheet(customersToSheet(rows, { showEmployee }));
+  wsData["!cols"] = autoWidths(customersToSheet(rows, { showEmployee }));
+  if(LANG === "ar") wsData["!views"] = [{ RTL: true }];
+  XLSX.utils.book_append_sheet(wb, wsData, t("sheetCustomers"));
+
+  const sum = summaryToSheet(rows, metaLines);
+  const wsSum = XLSX.utils.json_to_sheet(sum);
+  wsSum["!cols"] = autoWidths(sum);
+  if(LANG === "ar") wsSum["!views"] = [{ RTL: true }];
+  XLSX.utils.book_append_sheet(wb, wsSum, t("sheetSummary"));
+
+  XLSX.writeFile(wb, fileName);
+}
+
+/** Small helper: toggle a button into a loading state. */
+function withBusy(btn, labelHtml, fn){
+  const original = btn ? btn.innerHTML : "";
+  if(btn){ btn.disabled = true; btn.innerHTML = `<span class="spin"></span> ${labelHtml}`; }
+  return Promise.resolve()
+    .then(fn)
+    .finally(() => { if(btn){ btn.disabled = false; btn.innerHTML = original; } });
+}
+
+/* ---- Sales: export the selected day ---- */
+window.exportSalesDay = async (ev) => {
+  const btn = ev && ev.currentTarget;
+  await withBusy(btn, t("preparingFile"), async () => {
+    try{
+      const date = State.salesDate || todayKey();
+      // same query + same permission scope as the screen
+      const rows = await Data.customers({ employeeIds:[State.profile.id], from:date, to:date });
+      if(!rows.length){ toast(t("nothingToPrint"), "w"); return; }
+
+      downloadExcel(rows.slice().reverse(), {
+        fileName: `Kaizen_Sales_${empName(State.profile)}_${date}.xlsx`,
+        showEmployee: false,
+        metaLines: [
+          [t("employee"),    empName(State.profile)],
+          [t("date"),        fmtDate(date)],
+          [t("dailyTarget"), `${rows.length} / ${CONFIG.DAILY_TARGET} (${pct(rows.length, CONFIG.DAILY_TARGET)}%)`]
+        ]
+      });
+      toast(t("exportDone"), "s");
+    }catch(err){
+      console.error("[export sales]", err);
+      toast(err.message === "lib" ? t("libMissing") : t("exportFail"), "e");
+    }
+  });
+};
+
+/* ---- Sales: export all own customers of a level view ---- */
+window.exportSalesLevels = async (ev) => {
+  const btn = ev && ev.currentTarget;
+  await withBusy(btn, t("preparingFile"), async () => {
+    try{
+      const all = await Data.customers({ employeeIds:[State.profile.id] });
+      const sel = State.levelFilter;
+      const rows = sel === "all" ? all
+                 : sel === "__none__" ? all.filter(r => !r.customer_level)
+                 : all.filter(r => r.customer_level === sel);
+      if(!rows.length){ toast(t("nothingToPrint"), "w"); return; }
+
+      const lvLabel = sel === "all" ? t("allLevels")
+                    : sel === "__none__" ? t("notSet") : levelName(sel);
+      downloadExcel(rows, {
+        fileName: `Kaizen_Levels_${empName(State.profile)}_${todayKey()}.xlsx`,
+        showEmployee: false,
+        metaLines: [
+          [t("employee"), empName(State.profile)],
+          [t("level"),    lvLabel],
+          [t("generatedOn"), fmtDate(todayKey())]
+        ]
+      });
+      toast(t("exportDone"), "s");
+    }catch(err){
+      console.error("[export levels]", err);
+      toast(err.message === "lib" ? t("libMissing") : t("exportFail"), "e");
+    }
+  });
+};
+
+/* ---- Admin: export the customers view (respects the range chips) ---- */
+window.exportAdminCustomers = async (ev) => {
+  const btn = ev && ev.currentTarget;
+  await withBusy(btn, t("preparingFile"), async () => {
+    try{
+      const { from, to } = rangeToDates(State.adminRange);
+      const rows = await Data.customers({ from, to });   // full set, not just the page
+      if(!rows.length){ toast(t("nothingToPrint"), "w"); return; }
+
+      const period = from ? (from === to ? fmtDate(from) : `${fmtDate(from)} → ${fmtDate(to)}`) : t("allTime");
+      downloadExcel(rows, {
+        fileName: from
+          ? (from === to ? `Kaizen_Customers_${from}.xlsx` : `Kaizen_Customers_${from}_to_${to}.xlsx`)
+          : `Kaizen_Customers_All_${todayKey()}.xlsx`,
+        showEmployee: true,
+        metaLines: [
+          [t("period"),      period],
+          [t("employee"),    t("allEmployees")],
+          [t("generatedOn"), fmtDate(todayKey())]
+        ]
+      });
+      toast(t("exportDone"), "s");
+    }catch(err){
+      console.error("[export customers]", err);
+      toast(err.message === "lib" ? t("libMissing") : t("exportFail"), "e");
+    }
+  });
+};
+
+/* ---- Admin: export the generated report (respects every filter) ---- */
+window.exportReport = async (ev) => {
+  const btn = ev && ev.currentTarget;
+  const R = State.report;
+  if(!R.rows || !R.rows.length){ toast(t("nothingToPrint"), "w"); return; }
+
+  await withBusy(btn, t("preparingFile"), async () => {
+    try{
+      const { from, to } = rangeToDates(R.range, R.from, R.to);
+      const empNames = R.employees.length
+        ? R.employees.map(id => empName(State.employees.find(e => e.id === id))).join(" • ")
+        : t("allEmployees");
+      const resNames = R.results.length ? R.results.map(k => t("r_" + k)).join(" • ") : t("allResults");
+      const lvNames  = R.levels.length
+        ? R.levels.map(k => k === "__none__" ? t("notSet") : levelName(k)).join(" • ")
+        : t("allLevels");
+
+      downloadExcel(R.rows, {
+        fileName: from
+          ? (from === to ? `Kaizen_Report_${from}.xlsx` : `Kaizen_Report_${from}_to_${to}.xlsx`)
+          : `Kaizen_Report_All_${todayKey()}.xlsx`,
+        showEmployee: true,
+        metaLines: [
+          [t("period"),         reportPeriodText()],
+          [t("employee"),       empNames],
+          [t("followUpResult"), resNames],
+          [t("level"),          lvNames],
+          [t("generatedOn"),    fmtDate(todayKey())]
+        ]
+      });
+      toast(t("exportDone"), "s");
+    }catch(err){
+      console.error("[export report]", err);
+      toast(err.message === "lib" ? t("libMissing") : t("exportFail"), "e");
+    }
+  });
+};
+
+/* ---- Admin: export a single employee's full history ---- */
+window.exportEmployee = async (ev, empId) => {
+  const btn = ev && ev.currentTarget;
+  await withBusy(btn, t("preparingFile"), async () => {
+    try{
+      const e = State.employees.find(x => x.id === empId);
+      const rows = await Data.customers({ employeeIds:[empId] });
+      if(!rows.length){ toast(t("nothingToPrint"), "w"); return; }
+
+      downloadExcel(rows, {
+        fileName: `Kaizen_Employee_${(e && e.name_en) || "emp"}_${todayKey()}.xlsx`,
+        showEmployee: false,
+        metaLines: [
+          [t("employee"),      empName(e)],
+          [t("totalCustomers"),rows.length],
+          [t("generatedOn"),   fmtDate(todayKey())]
+        ]
+      });
+      toast(t("exportDone"), "s");
+    }catch(err){
+      console.error("[export employee]", err);
+      toast(err.message === "lib" ? t("libMissing") : t("exportFail"), "e");
+    }
+  });
+};
+
+/* =========================================================
+ * 18.7) EMPLOYEE MANAGEMENT  (admin only)
+ * ======================================================= */
+let editingEmployee = null;
+
+window.openEmployeeModal = (id) => {
+  editingEmployee = id ? State.employees.find(e => e.id === id) : null;
+  const e = editingEmployee || { name_ar:"", name_en:"", role:"sales", active:true };
+
+  openModal(`
+    <h3>${e.id ? t("editEmployee") : t("addEmployee")}
+      <button class="x" onclick="closeModal()">${IC.x}</button></h3>
+
+    <form onsubmit="return saveEmployee(event)">
+      <div class="form-grid">
+        <div>
+          <label class="req">${t("nameAr")}</label>
+          <input id="eNameAr" value="${esc(e.name_ar)}" autocomplete="off">
+          <div class="field-err" id="errNameAr">${t("errNameRequired")}</div>
+        </div>
+        <div>
+          <label class="req">${t("nameEn")}</label>
+          <input id="eNameEn" class="ltr" value="${esc(e.name_en)}" autocomplete="off">
+          <div class="field-err" id="errNameEn">${t("errNameRequired")}</div>
+        </div>
+        <div>
+          <label>${t("roleLbl")}</label>
+          <select id="eRole">
+            <option value="sales" ${e.role === "sales" ? "selected" : ""}>${t("roleSales")}</option>
+            <option value="admin" ${e.role === "admin" ? "selected" : ""}>${t("roleAdmin")}</option>
+          </select>
+        </div>
+        <div>
+          <label>${t("statusActive")}</label>
+          <select id="eActive">
+            <option value="1" ${e.active !== false ? "selected" : ""}>${t("activeYes")}</option>
+            <option value="0" ${e.active === false ? "selected" : ""}>${t("activeNo")}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">${t("cancel")}</button>
+        <button type="submit" class="btn btn-primary" id="empSaveBtn">${e.id ? t("update") : t("save")}</button>
+      </div>
+    </form>`, 560);
+
+  setTimeout(() => $("#eNameAr") && $("#eNameAr").focus(), 90);
+};
+
+window.saveEmployee = async (ev) => {
+  ev.preventDefault();
+  const ar = $("#eNameAr").value.trim();
+  const en = $("#eNameEn").value.trim();
+
+  let ok = true;
+  const mark = (inp, err, bad) => {
+    $(inp).classList.toggle("invalid", bad);
+    $(err).classList.toggle("on", bad);
+    if(bad) ok = false;
+  };
+  mark("#eNameAr", "#errNameAr", !ar);
+  mark("#eNameEn", "#errNameEn", !en);
+  if(!ok){ toast(t("errFill"), "w"); return false; }
+
+  const payload = {
+    name_ar : ar,
+    name_en : en,
+    role    : $("#eRole").value,
+    active  : $("#eActive").value === "1"
+  };
+
+  const btn = $("#empSaveBtn");
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> ${t("saving")}`;
+  try{
+    if(editingEmployee){
+      await Data.updateEmployee(editingEmployee.id, payload);
+    }else{
+      const maxOrder = Math.max(0, ...State.employees.map(x => x.sort_order || 0));
+      await Data.insertEmployee({ ...payload, sort_order: maxOrder + 1 });
+    }
+    await Data.loadEmployees();          // refresh shared list for everyone on next load
+    closeModal();
+    toast(editingEmployee ? t("empUpdated") : t("empSaved"), "s");
+    renderApp();                          // sidebar name may have changed
+  }catch(err){
+    console.error("[employee save]", err);
+    toast(friendlyError(err, "errSave"), "e");
+    btn.disabled = false; btn.textContent = t("save");
+  }
+  return false;
+};
+
+window.removeEmployee = (id) => {
+  if(State.profile && State.profile.id === id){ toast(t("cannotDeleteSelf"), "w"); return; }
+  confirmModal(t("confirmDeleteEmp"), async () => {
+    try{
+      await Data.deleteEmployee(id);
+      await Data.loadEmployees();
+      toast(t("empDeleted"), "s");
+      renderContent();
+    }catch(err){
+      console.error("[employee delete]", err);
+      toast(friendlyError(err, "errDelete"), "e");
+    }
+  });
 };
 
 /* =========================================================

@@ -271,6 +271,8 @@ tbody tr:hover{background:rgba(232,151,30,.045)}
 .avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:19px;flex-shrink:0}
 .emp-top b{font-size:16.5px;display:block}
 .emp-top span{font-size:12.5px;color:var(--muted)}
+.emp-actions{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.emp-actions .btn{flex:1}
 .mini-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:7px}
 .mini-row b{color:var(--navy)}
 .pbar{height:8px;border-radius:99px;background:rgba(232,151,30,.14);overflow:hidden}
