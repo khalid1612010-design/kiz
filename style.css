@@ -313,6 +313,53 @@ tbody tr:hover{background:rgba(232,151,30,.045)}
 .toast.i .ti{background:rgba(27,58,92,.09);color:var(--navy)}
 
 /* =========================================================
+   EXCEL IMPORT
+   ========================================================= */
+.imp-drop{border:2px dashed rgba(232,151,30,.4);border-radius:16px;padding:22px;text-align:center;background:rgba(232,151,30,.04);margin-bottom:14px}
+.imp-name{margin-top:12px;font-size:14px;font-weight:800;color:var(--navy);word-break:break-all}
+.imp-hint{margin-top:6px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.imp-cols{margin-bottom:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.imp-cols summary{padding:11px 15px;cursor:pointer;font-size:13.5px;font-weight:700;color:var(--navy);background:rgba(27,58,92,.03);user-select:none}
+.imp-cols summary:hover{background:rgba(232,151,30,.07)}
+.imp-cols-body{padding:14px 15px;font-size:12.5px;color:var(--muted);line-height:2}
+.imp-cols-body b{color:var(--navy)}
+.imp-note{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);color:var(--gold-dark);font-weight:700}
+.imp-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:34px;color:var(--muted);font-weight:700}
+.imp-error{display:flex;align-items:flex-start;gap:11px;padding:15px;border-radius:13px;background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.28);color:var(--danger-dark);font-size:13.5px;font-weight:700;line-height:1.7}
+.imp-error svg{width:22px;height:22px;flex-shrink:0;margin-top:1px}
+.imp-stats{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+.imp-stat{flex:1;min-width:88px;text-align:center;padding:11px 8px;border-radius:12px;border:1.5px solid var(--border);background:#fff}
+.imp-stat b{display:block;font-size:21px;font-weight:800;color:var(--navy);line-height:1.2}
+.imp-stat span{font-size:11px;color:var(--muted)}
+.imp-stat.ok{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.32)}
+.imp-stat.ok b{color:var(--success-dark)}
+.imp-stat.bad{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.3)}
+.imp-stat.bad b{color:var(--danger-dark)}
+.imp-stat.warn{background:rgba(232,151,30,.09);border-color:rgba(232,151,30,.35)}
+.imp-stat.warn b{color:var(--gold-dark)}
+.imp-table-wrap{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:13px}
+.imp-table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px}
+.imp-table thead th{position:sticky;top:0;z-index:3;background:#F2EFE4;font-size:11.5px;padding:10px 11px;border-bottom:2px solid var(--border)}
+.imp-table td{padding:9px 11px;font-size:13px;border-bottom:1px solid rgba(27,58,92,.05)}
+.imp-table tr.row-bad td{background:rgba(239,68,68,.055)}
+.imp-table tr.row-dup td{background:rgba(232,151,30,.07)}
+.imp-missing{color:var(--danger-dark);font-style:normal;font-weight:800}
+.imp-flag{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;font-size:12.5px;font-weight:800;cursor:help}
+.imp-flag.ok{background:rgba(34,197,94,.15);color:var(--success-dark)}
+.imp-flag.bad{background:rgba(239,68,68,.14);color:var(--danger-dark)}
+.imp-flag.warn{background:rgba(232,151,30,.18);color:var(--gold-dark)}
+.imp-errors{margin-top:14px;padding:14px;border-radius:13px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);max-height:170px;overflow-y:auto}
+.imp-errors b{display:block;color:var(--danger-dark);font-size:13.5px;margin-bottom:8px}
+.imp-errors ul{list-style:none;padding:0;margin:0}
+.imp-errors li{font-size:12.5px;color:var(--muted);padding:4px 0;border-bottom:1px dashed rgba(239,68,68,.14)}
+.imp-errors li:last-child{border-bottom:0}
+.imp-errors li span{font-weight:800;color:var(--danger-dark)}
+@media(max-width:600px){
+  .imp-stat{min-width:calc(50% - 5px)}
+  .imp-table-wrap{max-height:280px}
+}
+
+/* =========================================================
    PRINT
    ========================================================= */
 #printArea{display:none}

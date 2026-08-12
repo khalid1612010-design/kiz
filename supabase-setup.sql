@@ -16,11 +16,11 @@ create table if not exists public.customer_levels (
 );
 
 insert into public.customer_levels (key, name_ar, name_en, sort_order)
-values ('level_1','المستوى الأول','Level 1',1)  on conflict (key) do nothing;
+values ('level_1','مهتم','Interested',1)               on conflict (key) do nothing;
 insert into public.customer_levels (key, name_ar, name_en, sort_order)
-values ('level_2','المستوى الثاني','Level 2',2) on conflict (key) do nothing;
+values ('level_2','طلب عرض السعر','Quote Requested',2) on conflict (key) do nothing;
 insert into public.customer_levels (key, name_ar, name_en, sort_order)
-values ('level_3','المستوى الثالث','Level 3',3) on conflict (key) do nothing;
+values ('level_3','عميل فعلي','Active Client',3)       on conflict (key) do nothing;
 
 
 -- ============ 2) EMPLOYEES ============
