@@ -96,7 +96,7 @@ const I18N = {
     hintRls:"الاتصال ناجح لكن الجدول رجع فارغًا — غالبًا RLS مفعّل بدون سياسة، أو الجدول لا يحتوي بيانات",
     okSaved:"تم الحفظ بنجاح", okUpdated:"تم التحديث بنجاح", okDeleted:"تم الحذف",
     backOnline:"عاد الاتصال بالإنترنت", offline:"أنت غير متصل بالإنترنت",
-    nothingToPrint:"لا توجد بيانات للطباعة",
+    nothingToPrint:"لا توجد بيانات للطباعة", addToSelectedDate:"إضافة إلى التاريخ المحدد", pastDateSelected:"أنت تعرض سجل يوم سابق — الإضافات ستحفظ في هذا اليوم",
 
     /* ---- Excel import ---- */
     importExcel:"استيراد من Excel", importTitle:"استيراد بيانات العملاء من Excel",
@@ -113,13 +113,14 @@ const I18N = {
     errFileEmpty:"الملف فارغ أو لا يحتوي على بيانات",
     errFileRead:"تعذّر قراءة الملف — تأكد أنه ملف Excel صالح",
     errMissingCol:"لم يتم العثور على عمود مطلوب",
-    errRowName:"اسم الشركة مطلوب", errRowPhone:"رقم الهاتف غير صالح",
+    errRowName:"اسم الشركة مطلوب", errRowPhone:"رقم الهاتف مطلوب",
     errRowEmail:"البريد الإلكتروني غير صالح",
     errLimitExceeded:"تجاوز الحد اليومي المسموح",
     limitInfo:"الحد اليومي", limitRemaining:"المتبقي اليوم",
     willImport:"سيتم استيراد", importDone:"تم استيراد {n} عميل بنجاح",
     importPartial:"تم استيراد {ok} عميل — فشل {fail}",
     noValidRows:"لا توجد سجلات صحيحة للاستيراد",
+    forceImport:"استيراد الكل رغم الأخطاء", forceImportWarning:"سيتم حفظ الصفوف كما هي، بما فيها البيانات الناقصة أو غير الصحيحة. هل تريد المتابعة؟",
     libMissing:"مكتبة قراءة Excel غير محمّلة — حدّث الصفحة",
 
     /* ---- Excel export ---- */
@@ -198,7 +199,7 @@ const I18N = {
     hintRls:"Connected but the table returned 0 rows — RLS is likely enabled without a policy, or the table is empty",
     okSaved:"Saved successfully", okUpdated:"Updated successfully", okDeleted:"Deleted",
     backOnline:"Back online", offline:"You are offline",
-    nothingToPrint:"Nothing to print",
+    nothingToPrint:"Nothing to print", addToSelectedDate:"Add to selected date", pastDateSelected:"You are viewing a previous day — new records will be saved to that date",
 
     /* ---- Excel import ---- */
     importExcel:"Import from Excel", importTitle:"Import Customers from Excel",
@@ -215,13 +216,14 @@ const I18N = {
     errFileEmpty:"The file is empty or has no data rows",
     errFileRead:"Could not read the file — make sure it is a valid Excel file",
     errMissingCol:"A required column was not found",
-    errRowName:"Company name is required", errRowPhone:"Invalid phone number",
+    errRowName:"Company name is required", errRowPhone:"Phone number is required",
     errRowEmail:"Invalid email address",
     errLimitExceeded:"Daily limit exceeded",
     limitInfo:"Daily limit", limitRemaining:"Remaining today",
     willImport:"Will import", importDone:"{n} customers imported successfully",
     importPartial:"{ok} imported — {fail} failed",
     noValidRows:"No valid rows to import",
+    forceImport:"Import all despite errors", forceImportWarning:"Rows will be saved as entered, including missing or invalid values. Continue?",
     libMissing:"Excel library not loaded — please refresh the page",
 
     /* ---- Excel export ---- */
@@ -850,7 +852,8 @@ async function viewSalesDashboard(){
   const rows = await Data.customers({ employeeIds:[me.id], from:date, to:date });
   const s    = Stats.summary(rows);
   const isToday = date === todayKey();
-  if(isToday) State.todayCount = rows.length;   // used by the Excel import limit check
+  // Import/add operations use the currently selected date, including past days.
+  State.todayCount = rows.length;
   const done = s.total, target = CONFIG.DAILY_TARGET;
   const percent = pct(done, target);
   const ringPct = Math.min(100, percent);
@@ -865,8 +868,8 @@ async function viewSalesDashboard(){
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="exportSalesDay(event)">${IC.sheet} ${t("exportExcel")}</button>
-      ${isToday ? `<button class="btn btn-navy btn-sm" onclick="openImportModal()">${IC.upload} ${t("importExcel")}</button>` : ""}
-      ${isToday ? `<button class="btn btn-primary" onclick="openCustomerModal()">${IC.plus} ${t("addCustomer")}</button>` : ""}
+      <button class="btn btn-navy btn-sm" onclick="openImportModal()">${IC.upload} ${t("importExcel")}</button>
+      <button class="btn btn-primary" onclick="openCustomerModal()">${IC.plus} ${t("addCustomer")}</button>
     </div>
   </div>
 
@@ -901,7 +904,7 @@ async function viewSalesDashboard(){
   <div class="card filter-bar">
     <div><label>${t("date")}</label><input type="date" value="${date}" max="${todayKey()}" onchange="setSalesDate(this.value)"></div>
     <div style="min-width:auto"><button class="btn btn-outline btn-sm" onclick="setSalesDate('${todayKey()}')">${t("today")}</button></div>
-    ${!isToday ? `<div style="color:var(--gold-dark);font-size:13px;font-weight:700;min-width:auto">${t("noCustomers")===""?"":""}</div>` : ""}
+    ${!isToday ? `<div style="color:var(--gold-dark);font-size:13px;font-weight:700;min-width:auto">${t("pastDateSelected")}</div>` : ""}
   </div>
 
   <!-- Customers table -->
@@ -1034,6 +1037,7 @@ window.openCustomerModal = async (id) => {
     customer_name:"", phone:"", email:"", email_sent:false, call_completed:false,
     follow_up_result:"follow_up", customer_level:"", notes:""
   };
+  const selectedDate = State.salesDate || todayKey();
 
   openModal(`
     <h3>${c.id ? t("editCustomer") : t("addCustomer")}
@@ -1041,6 +1045,7 @@ window.openCustomerModal = async (id) => {
 
     <form id="custForm" onsubmit="return saveCustomer(event)">
       <div class="form-grid">
+        ${!c.id ? `<div class="full"><div style="padding:10px 12px;border-radius:10px;background:var(--gold-soft);color:var(--gold-dark);font-size:13px;font-weight:700">${t("addToSelectedDate")}: ${fmtDate(selectedDate)}</div></div>` : ""}
         <div class="full">
           <label class="req">${t("customerName")}</label>
           <input id="cName" value="${esc(c.customer_name)}" autocomplete="off">
@@ -1133,6 +1138,11 @@ window.saveCustomer = async (ev) => {
     notes            : $("#cNotes").value.trim(),
     employee_id      : State.profile.id
   };
+  // New records follow the date selected in the sales history/date filter.
+  // Existing records keep their original created_at timestamp.
+  if(!editingCustomer){
+    payload.created_at = new Date(`${State.salesDate || todayKey()}T12:00:00${tzOffset(State.salesDate || todayKey())}`).toISOString();
+  }
 
   const btn = $("#saveBtn");
   btn.disabled = true; btn.innerHTML = `<span class="spin"></span> ${t("saving")}`;
@@ -1777,8 +1787,9 @@ window.onImportFile = async (input) => {
     if(Imp.missing.length){ Imp.rows = []; renderImportBody(); return; }
 
     const cell = (row, f) => cols[f] === undefined ? "" : String(row[cols[f]] ?? "").trim();
+    const importDate = State.salesDate || todayKey();
     const todayRows = await Data.customers({
-      employeeIds:[State.profile.id], from:todayKey(), to:todayKey()
+      employeeIds:[State.profile.id], from:importDate, to:importDate
     });
     const seenPhone = new Set(todayRows.map(r => String(r.phone||"").replace(/\D/g,"")));
     const seenName  = new Set(todayRows.map(r => String(r.customer_name||"").trim().toLowerCase()));
@@ -1788,6 +1799,8 @@ window.onImportFile = async (input) => {
       .filter(r => r.some(c => String(c).trim() !== ""))          // drop blank lines
       .map((r, i) => {
         const name  = cell(r,"customer_name");
+        // Keep the Excel phone value exactly as text. Do not cast, strip,
+        // validate length, or reject spaces/hyphens/symbols.
         const phone = cell(r,"phone");
         const email = cell(r,"email");
         const note  = cell(r,"note");
@@ -1795,8 +1808,9 @@ window.onImportFile = async (input) => {
 
         const errors = [];
         if(!name)                       errors.push(t("errRowName"));
-        if(!phone || !isPhone(phone))   errors.push(t("errRowPhone"));
-        if(email && !isEmail(email))    errors.push(t("errRowEmail"));
+        // Excel is an external working sheet. Keep phone/email exactly as
+        // entered: spaces, hyphens, short values, long values, and free text
+        // are all accepted. Only the company name is required for import.
 
         const digits = phone.replace(/\D/g,"");
         const key    = digits || name.toLowerCase();
@@ -1841,6 +1855,7 @@ function renderImportBody(){
   const usedToday = State.todayCount || 0;
   const remaining = Math.max(0, CONFIG.DAILY_TARGET - usedToday);
   const willImport = Math.min(importable.length, remaining);
+  const forceWillImport = Math.min(total, remaining);
   const overLimit  = importable.length > remaining;
 
   const statusChip = s => `<span class="badge b-${s}">${resultEmoji(s)} ${esc(resultLabel(s))}</span>`;
@@ -1890,17 +1905,26 @@ function renderImportBody(){
 
   foot.innerHTML = `
     <button class="btn btn-outline" onclick="closeModal()">${t("cancel")}</button>
-    <button class="btn btn-primary" id="impGo" ${willImport ? "" : "disabled"} onclick="runImport()">
-      ${IC.check} ${invalid || dups ? t("importValidOnly") : t("confirmImport")} (${willImport})
-    </button>`;
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn btn-primary" id="impGo" ${willImport ? "" : "disabled"} onclick="runImport(false)">
+        ${IC.check} ${invalid || dups ? t("importValidOnly") : t("confirmImport")} (${willImport})
+      </button>
+      <button class="btn btn-outline" id="impForce" ${forceWillImport ? "" : "disabled"} onclick="runImport(true)">
+        ${IC.warn} ${t("forceImport")} (${forceWillImport})
+      </button>
+    </div>`;
 }
 
-window.runImport = async () => {
+window.runImport = async (force = false) => {
   if(Imp.busy) return;
   const usedToday = State.todayCount || 0;
   const remaining = Math.max(0, CONFIG.DAILY_TARGET - usedToday);
-  const queue = Imp.rows.filter(r => r.valid && !r.dup).slice(0, remaining);
+  // Normal mode excludes invalid/duplicate rows. Force mode preserves the
+  // spreadsheet values and imports every row allowed by the daily limit.
+  const queue = (force ? Imp.rows : Imp.rows.filter(r => r.valid && !r.dup)).slice(0, remaining);
   if(!queue.length){ toast(t("noValidRows"), "w"); return; }
+
+  if(force && !window.confirm(t("forceImportWarning"))) return;
 
   Imp.busy = true;
   const btn = $("#impGo");
@@ -1913,15 +1937,18 @@ window.runImport = async () => {
     try{
       // Uses the SAME save path as manual entry
       await Data.insertCustomer({
-        customer_name    : r.name,
-        phone            : r.phone,
+        // Empty strings satisfy the existing NOT NULL columns while keeping
+        // the original row importable; no value is invented for the user.
+        customer_name    : r.name || "",
+        phone            : r.phone || "",
         email            : r.email || null,
         email_sent       : false,
         call_completed   : false,
         follow_up_result : r.status,
         customer_level   : null,
         notes            : r.note || "",
-        employee_id      : State.profile.id
+        employee_id      : State.profile.id,
+        created_at       : new Date(`${State.salesDate || todayKey()}T12:00:00${tzOffset(State.salesDate || todayKey())}`).toISOString()
       });
       ok++;
     }catch(err){ console.error("[import row]", r.line, err); fail++; }
